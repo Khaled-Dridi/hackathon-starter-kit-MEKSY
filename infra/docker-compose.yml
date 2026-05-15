@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: starter-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-inetum}
+      POSTGRES_USER: ${POSTGRES_USER:-inetum}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-inetum}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-inetum} -d ${POSTGRES_DB:-inetum}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: src/main/docker/Dockerfile
+    container_name: starter-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      QUARKUS_PROFILE: prod
+      QUARKUS_DATASOURCE_USERNAME: ${POSTGRES_USER:-inetum}
+      QUARKUS_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-inetum}
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-inetum}
+      QUARKUS_LANGCHAIN4J_OPENAI_API_KEY: ${OPENAI_API_KEY:-placeholder-set-OPENAI_API_KEY-env}
+      QUARKUS_LANGCHAIN4J_OPENAI_CHAT_MODEL_MODEL_NAME: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ../frontend
+    container_name: starter-frontend
+    depends_on:
+      - backend
+    ports:
+      - "4200:80"
+
+volumes:
+  postgres-data:

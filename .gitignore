@@ -1,0 +1,27 @@
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Build / deps
+target/
+node_modules/
+dist/
+.angular/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Secrets (compose env, JWT keys)
+infra/.env
+backend/src/main/resources/privateKey.pem
+backend/src/main/resources/publicKey.pem
+backend/.env
+
+# Local Quarkus
+.quarkus/
+
+# claude-preview tooling
+.claude/

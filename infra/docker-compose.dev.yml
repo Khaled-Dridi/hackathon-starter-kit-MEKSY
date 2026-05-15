@@ -1,0 +1,39 @@
+services:
+  backend:
+    image: maven:3.9-eclipse-temurin-17
+    build: !reset null
+    container_name: starter-backend-dev
+    working_dir: /app
+    volumes:
+      - ../backend:/app
+      - maven-cache:/root/.m2
+    command: mvn -B quarkus:dev -Dquarkus.http.host=0.0.0.0 -Ddebug=5005
+    ports:
+      - "8080:8080"
+      - "5005:5005"
+    environment:
+      QUARKUS_PROFILE: dev
+      QUARKUS_LIVE_RELOAD_PASSWORD: dev
+      QUARKUS_DATASOURCE_USERNAME: ${POSTGRES_USER:-inetum}
+      QUARKUS_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-inetum}
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-inetum}
+      QUARKUS_LANGCHAIN4J_OPENAI_API_KEY: ${OPENAI_API_KEY:-placeholder-set-OPENAI_API_KEY-env}
+      QUARKUS_LANGCHAIN4J_OPENAI_CHAT_MODEL_MODEL_NAME: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+
+  frontend:
+    image: node:20-alpine
+    build: !reset null
+    container_name: starter-frontend-dev
+    working_dir: /app
+    volumes:
+      - ../frontend:/app
+      - node-modules:/app/node_modules
+    command: sh -c "npm ci && npm start -- --host 0.0.0.0 --poll 1000"
+    ports:
+      - "4200:4200"
+    environment:
+      BACKEND_HOST: http://backend:8080
+
+volumes:
+  maven-cache:
+  node-modules:
