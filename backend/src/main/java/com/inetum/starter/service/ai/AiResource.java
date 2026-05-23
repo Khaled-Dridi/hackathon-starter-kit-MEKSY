@@ -3,7 +3,9 @@ package com.inetum.starter.service.ai;
 import com.inetum.starter.dto.mapper.ChatMapper;
 import com.inetum.starter.dto.request.ChatRequestDTO;
 import com.inetum.starter.dto.request.CreateSessionDTO;
+import com.inetum.starter.dto.request.GenerateDescriptionDTO;
 import com.inetum.starter.dto.response.ChatResponseDTO;
+import com.inetum.starter.dto.response.GeneratedDescriptionDTO;
 import com.inetum.starter.dto.response.MessageResponseDTO;
 import com.inetum.starter.dto.response.SessionResponseDTO;
 import jakarta.annotation.security.RolesAllowed;
@@ -92,5 +94,14 @@ public class AiResource {
                 Integer.valueOf(request.getMessage().length()));
         var reply = sessionService.sendMessage(id, currentUserId(), request.getMessage());
         return RestResponse.ok(chatMapper.toResponse(reply));
+    }
+
+    @POST
+    @Path("/actions/describe")
+    @jakarta.annotation.security.RolesAllowed("ADMIN")
+    public RestResponse<GeneratedDescriptionDTO> describeAction(@Valid GenerateDescriptionDTO body) {
+        LOG.debugf("AI describe action (title len=%d)", body.getTitle().length());
+        String description = assistant.generateActionDescription(body.getTitle());
+        return RestResponse.ok(new GeneratedDescriptionDTO(description));
     }
 }

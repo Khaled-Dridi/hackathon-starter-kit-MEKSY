@@ -1,0 +1,367 @@
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+
+import { ActionsService, CharityAction } from '../../core/actions.service';
+import { AiService } from '../../core/ai.service';
+
+@Component({
+  selector: 'app-admin-action-form',
+  standalone: true,
+  imports: [FormsModule, RouterLink],
+  template: `
+    <div class="container container--narrow" style="padding: 24px 0 64px;">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a routerLink="/admin/actions">Admin / Actions</a>
+        <span class="breadcrumb__sep">/</span>
+        <span>{{ isEdit() ? title : 'New action' }}</span>
+      </nav>
+
+      <div class="form-head">
+        <h1>{{ isEdit() ? 'Edit action' : 'New action' }}</h1>
+        <p class="meta">
+          {{ isEdit()
+              ? 'Update what your colleagues see. Existing registrations are kept.'
+              : 'The information your colleagues will see first.' }}
+        </p>
+      </div>
+
+      @if (loadError()) {
+        <p class="ai-error" style="margin-top: 16px;">{{ loadError() }}</p>
+      }
+
+      <form (ngSubmit)="submit()" #f="ngForm">
+        <section class="form-card">
+          <h2>Basics</h2>
+
+          <div class="field">
+            <label class="field__label" for="title">Action title</label>
+            <input class="input" id="title" name="title" type="text"
+                   placeholder="e.g. Riverbank clean-up — quai de Seine"
+                   [(ngModel)]="title" required maxlength="200" />
+            <p class="field__hint">Keep it short and concrete. One line.</p>
+          </div>
+
+          <div class="field" style="margin-top: 20px;">
+            <div class="field__row">
+              <label class="field__label" for="description">Description</label>
+              <span class="field__hint">120–280 words recommended</span>
+            </div>
+            <div class="textarea-wrap">
+              <textarea class="textarea" id="description" name="description" rows="7"
+                        placeholder="What will participants do? Who do they meet? What should they bring?"
+                        [(ngModel)]="description"></textarea>
+              <button type="button" class="ai-btn" [disabled]="aiBusy() || !title.trim()"
+                      (click)="generate()">
+                <i class="pi pi-sparkles"></i>
+                @if (aiBusy()) { Generating… } @else { Generate from title }
+              </button>
+            </div>
+
+            @if (aiError()) {
+              <p class="ai-error" role="alert">{{ aiError() }}</p>
+            }
+
+            @if (aiPreview()) {
+              <div class="ai-result" aria-live="polite">
+                <div class="ai-result__head">
+                  <span><i class="pi pi-sparkles"></i> Suggested · review before using</span>
+                  <div class="ai-result__actions">
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="dismissAi()">Dismiss</button>
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="acceptAi()">Use this</button>
+                  </div>
+                </div>
+                <p>{{ aiPreview() }}</p>
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="form-card">
+          <h2>When &amp; where</h2>
+
+          <div class="grid-2">
+            <div class="field">
+              <label class="field__label" for="date">Date</label>
+              <input class="input" id="date" name="date" type="date"
+                     [(ngModel)]="date" required />
+            </div>
+            <div class="field">
+              <label class="field__label" for="time">Start time</label>
+              <input class="input" id="time" name="time" type="time"
+                     [(ngModel)]="time" required />
+            </div>
+          </div>
+
+          <div class="field" style="margin-top: 16px;">
+            <label class="field__label" for="location">Location</label>
+            <input class="input" id="location" name="location" type="text"
+                   placeholder="e.g. Paris 11ᵉ · République"
+                   [(ngModel)]="location" maxlength="200" />
+            <p class="field__hint">Leave empty for remote or unspecified.</p>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <h2>Capacity &amp; cause</h2>
+
+          <div class="grid-2">
+            <div class="field">
+              <label class="field__label" for="capacity">Capacity (seats)</label>
+              <input class="input" id="capacity" name="capacity" type="number"
+                     min="1" [(ngModel)]="capacity" required />
+            </div>
+            <div class="field">
+              <label class="field__label" for="oddTag">SDG / ODD (optional)</label>
+              <select class="select" id="oddTag" name="oddTag" [(ngModel)]="oddTag">
+                <option [ngValue]="null">— None —</option>
+                <option value="SDG_01">01 · No poverty</option>
+                <option value="SDG_02">02 · Zero hunger</option>
+                <option value="SDG_03">03 · Health</option>
+                <option value="SDG_04">04 · Quality education</option>
+                <option value="SDG_05">05 · Gender equality</option>
+                <option value="SDG_10">10 · Reduced inequalities</option>
+                <option value="SDG_11">11 · Sustainable cities</option>
+                <option value="SDG_13">13 · Climate action</option>
+                <option value="SDG_14">14 · Life below water</option>
+                <option value="SDG_15">15 · Life on land</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <h2>After the event</h2>
+          <p class="section-subtitle" style="margin-bottom: 14px;">
+            Optional. Add a short impact summary after the action — e.g.
+            "120 meals served" or "8 hours mentoring delivered". Used as
+            internal narrative, not a metric.
+          </p>
+          <div class="field">
+            <label class="field__label" for="impact">Impact summary</label>
+            <textarea class="textarea" id="impact" name="impact" rows="3"
+                      placeholder="e.g. 120 meals served across 3 stops."
+                      [(ngModel)]="impactSummary"></textarea>
+          </div>
+        </section>
+
+        @if (submitError()) {
+          <p class="ai-error" role="alert" style="margin-top: 16px;">{{ submitError() }}</p>
+        }
+
+        <div class="form-actions">
+          <a class="btn btn--ghost" routerLink="/admin/actions">Cancel</a>
+          <button class="btn btn--primary" type="submit"
+                  [disabled]="submitting() || f.invalid">
+            @if (submitting()) { Saving… } @else { {{ isEdit() ? 'Save changes' : 'Create action' }} }
+          </button>
+        </div>
+      </form>
+    </div>
+  `,
+  styles: [`
+    :host { display: block; background: var(--surface); min-height: calc(100vh - var(--header-h)); }
+    .breadcrumb { font-size: 13px; color: var(--text-muted); padding: 0 0 16px; }
+    .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--navy); }
+    .breadcrumb__sep { margin: 0 8px; color: var(--text-subtle); }
+
+    .form-head h1 {
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      font-weight: 600;
+      color: var(--navy);
+      margin: 0 0 6px;
+    }
+    .form-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px 24px 28px;
+      margin-top: 20px;
+    }
+    .form-card h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--navy);
+      margin: 0 0 16px;
+      letter-spacing: -0.01em;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .textarea-wrap { position: relative; }
+    .ai-btn {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      height: 28px;
+      padding: 0 10px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      color: var(--navy);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ai-btn:hover:not(:disabled) { border-color: var(--navy); background: var(--white); }
+    .ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .ai-btn i { font-size: 11px; }
+
+    .ai-error {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #FBEDED;
+      color: #8B1F1F;
+      border-radius: var(--radius);
+      font-size: 13px;
+    }
+
+    .ai-result {
+      margin-top: 12px;
+      padding: 14px 16px;
+      background: var(--yellow-soft);
+      border: 1px solid rgba(244, 228, 67, 0.6);
+      border-radius: var(--radius);
+    }
+    .ai-result__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12.5px;
+      color: var(--navy);
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+    .ai-result__head i { font-size: 11px; }
+    .ai-result__actions { display: flex; gap: 6px; }
+    .ai-result p { margin: 0; font-size: 14px; color: var(--text); line-height: 1.5; }
+
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      padding: 16px 0;
+    }
+  `]
+})
+export class AdminActionFormComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private actionsApi = inject(ActionsService);
+  private aiApi = inject(AiService);
+  private router = inject(Router);
+
+  readonly editId = signal<number | null>(null);
+  readonly isEdit = computed(() => this.editId() !== null);
+
+  title = '';
+  description = '';
+  date = '';
+  time = '09:00';
+  location = '';
+  capacity = 10;
+  oddTag: string | null = null;
+  impactSummary = '';
+
+  readonly aiBusy = signal(false);
+  readonly aiPreview = signal<string | null>(null);
+  readonly aiError = signal<string | null>(null);
+  readonly submitting = signal(false);
+  readonly submitError = signal<string | null>(null);
+  readonly loadError = signal<string | null>(null);
+
+  ngOnInit(): void {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    if (idParam) {
+      const id = Number(idParam);
+      this.editId.set(id);
+      this.loadAction(id);
+    }
+  }
+
+  private loadAction(id: number): void {
+    this.actionsApi.get(id).subscribe({
+      next: (a) => this.populate(a),
+      error: () => this.loadError.set('Could not load this action.')
+    });
+  }
+
+  private populate(a: CharityAction): void {
+    this.title = a.title;
+    this.description = a.description ?? '';
+    // ISO 2026-06-15T18:30:00 → date 2026-06-15, time 18:30
+    const [d, t] = (a.actionDate ?? '').split('T');
+    this.date = d ?? '';
+    this.time = (t ?? '09:00:00').substring(0, 5);
+    this.location = a.location ?? '';
+    this.capacity = a.capacity;
+    this.oddTag = a.oddTag ?? null;
+    this.impactSummary = a.impactSummary ?? '';
+  }
+
+  generate(): void {
+    if (!this.title.trim()) return;
+    this.aiBusy.set(true);
+    this.aiError.set(null);
+    this.aiPreview.set(null);
+    this.aiApi.describeAction(this.title.trim()).subscribe({
+      next: (res) => { this.aiPreview.set(res.description); this.aiBusy.set(false); },
+      error: (err) => {
+        this.aiBusy.set(false);
+        this.aiError.set(
+          err.status === 500
+            ? 'AI service unavailable (no API key configured).'
+            : 'Could not generate a description.');
+      }
+    });
+  }
+
+  acceptAi(): void {
+    const text = this.aiPreview();
+    if (text) this.description = text;
+    this.aiPreview.set(null);
+  }
+
+  dismissAi(): void {
+    this.aiPreview.set(null);
+  }
+
+  submit(): void {
+    if (!this.date || !this.time) return;
+    this.submitting.set(true);
+    this.submitError.set(null);
+    const actionDate = `${this.date}T${this.time}:00`;
+    const payload = {
+      title: this.title.trim(),
+      description: this.description.trim(),
+      actionDate,
+      location: this.location.trim() || null,
+      capacity: this.capacity,
+      oddTag: this.oddTag,
+      impactSummary: this.impactSummary.trim() || null
+    };
+
+    const id = this.editId();
+    const obs = id !== null
+      ? this.actionsApi.update(id, payload)
+      : this.actionsApi.create(payload);
+
+    obs.subscribe({
+      next: (a) => this.router.navigate(['/actions', a.id]),
+      error: (err) => {
+        this.submitting.set(false);
+        this.submitError.set(err?.error?.message ?? 'Could not save action.');
+      }
+    });
+  }
+}

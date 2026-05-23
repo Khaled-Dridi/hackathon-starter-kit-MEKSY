@@ -29,7 +29,7 @@ services:
       - ../frontend:/app
       - node-modules:/app/node_modules
     command: sh -c "npm ci && npm start -- --host 0.0.0.0 --poll 1000"
-    ports:
+    ports: !override
       - "4200:4200"
     environment:
       BACKEND_HOST: http://backend:8080
