@@ -23,5 +23,9 @@ backend/.env
 # Local Quarkus
 .quarkus/
 
+# User-uploaded files (action / proposal cover images). FileService writes
+# them to backend/uploads/ at runtime; we never commit them.
+backend/uploads/
+
 # claude-preview tooling
 .claude/

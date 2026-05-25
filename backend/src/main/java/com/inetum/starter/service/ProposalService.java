@@ -2,15 +2,18 @@ package com.inetum.starter.service;
 
 import com.inetum.starter.entity.ProposalEntity;
 import com.inetum.starter.entity.ProposalStatus;
+import com.inetum.starter.events.DomainEvent;
 import com.inetum.starter.exception.ResourceNotFoundException;
 import com.inetum.starter.repository.ProposalRepository;
 import com.inetum.starter.repository.UserRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.jboss.logging.Logger;
 
 import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 @RequiredArgsConstructor
@@ -20,6 +23,7 @@ public class ProposalService {
 
     private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
+    private final Event<DomainEvent> events;
 
     public List<ProposalEntity> listAll() {
         return proposalRepository.listAll();
@@ -39,13 +43,16 @@ public class ProposalService {
     }
 
     @Transactional
-    public ProposalEntity create(Long userId, String title, String description) {
+    public ProposalEntity create(Long userId, String title, String description, String imageUrl) {
         var proposal = new ProposalEntity();
         proposal.setUserId(userId);
         proposal.setTitle(title);
         proposal.setDescription(description == null ? "" : description);
+        proposal.setImageUrl(imageUrl);
         proposalRepository.persist(proposal);
         LOG.debugf("Proposal created id=%s userId=%s", proposal.getId(), userId);
+        events.fire(DomainEvent.userScoped("proposal.created", null, userId,
+                Map.of("id", proposal.getId(), "title", proposal.getTitle())));
         return proposal;
     }
 
@@ -54,6 +61,8 @@ public class ProposalService {
         var proposal = get(id);
         proposal.setStatus(status);
         LOG.debugf("Proposal status changed id=%s status=%s", id, status);
+        events.fire(DomainEvent.userScoped("proposal.status.changed", null, proposal.getUserId(),
+                Map.of("id", id, "status", status.name())));
         return proposal;
     }
 

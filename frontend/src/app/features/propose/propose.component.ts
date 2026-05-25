@@ -1,14 +1,16 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { Proposal, ProposalsService } from '../../core/proposals.service';
+import { EventsService } from '../../core/events.service';
+import { ImagePickerComponent } from '../../shared/image-picker.component';
 
 @Component({
   selector: 'app-propose',
   standalone: true,
-  imports: [FormsModule, DatePipe, RouterLink],
+  imports: [FormsModule, DatePipe, RouterLink, ImagePickerComponent],
   template: `
     <div class="container container--narrow" style="padding: 56px 0 64px;">
       <section class="propose__intro">
@@ -36,6 +38,14 @@ import { Proposal, ProposalsService } from '../../core/proposals.service';
                       [(ngModel)]="description"></textarea>
           </div>
 
+          <div class="field" style="margin-top: 18px;">
+            <label class="field__label">Image (optional)</label>
+            <app-image-picker [value]="imageUrl" (valueChange)="imageUrl = $event" />
+            <p class="field__hint">
+              A photo of the cause, the place, or the NGO helps reviewers picture your idea.
+            </p>
+          </div>
+
           @if (success()) {
             <p class="propose-ok" role="status">
               <i class="pi pi-check-circle"></i> Idea submitted. The Charity Day team will review it shortly.
@@ -58,12 +68,17 @@ import { Proposal, ProposalsService } from '../../core/proposals.service';
         <section class="submitted-strip" aria-label="Your ideas">
           <h3>Your recent ideas</h3>
           @for (p of mine(); track p.id) {
-            <div class="row--between">
-              <div>
-                <span style="color: var(--text); font-weight: 500;">{{ p.title }}</span>
-                <span class="meta" style="display:block; font-size:12px;">
-                  Submitted {{ p.createdAt | date:'MMM d' }}
-                </span>
+            <div class="row--between mine-row">
+              <div class="mine-row__left">
+                @if (p.imageUrl) {
+                  <img class="mine-row__thumb" [src]="p.imageUrl" alt="" loading="lazy" />
+                }
+                <div>
+                  <span style="color: var(--text); font-weight: 500;">{{ p.title }}</span>
+                  <span class="meta" style="display:block; font-size:12px;">
+                    Submitted {{ p.createdAt | date:'MMM d' }}
+                  </span>
+                </div>
               </div>
               @switch (p.status) {
                 @case ('PENDING')  { <span class="pill pill--soon">In review</span> }
@@ -151,14 +166,27 @@ import { Proposal, ProposalsService } from '../../core/proposals.service';
       border-top: 1px solid var(--border);
     }
     .submitted-strip .row--between:first-of-type { border-top: 0; }
+    .mine-row__left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .mine-row__thumb {
+      width: 40px; height: 40px;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      flex-shrink: 0;
+    }
   `]
 })
-export class ProposeComponent implements OnInit {
+export class ProposeComponent implements OnInit, OnDestroy {
   private api = inject(ProposalsService);
   private router = inject(Router);
+  private events = inject(EventsService);
+
+  /** SSE unsubscribe handles. */
+  private offEvents: Array<() => void> = [];
 
   title = '';
   description = '';
+  imageUrl: string | null = null;
   readonly submitting = signal(false);
   readonly success = signal(false);
   readonly error = signal<string | null>(null);
@@ -166,6 +194,16 @@ export class ProposeComponent implements OnInit {
 
   ngOnInit(): void {
     this.refreshMine();
+
+    // Real-time: if an admin changes the status of one of *my* proposals,
+    // the server sends a personal proposal.status.changed event. Refresh.
+    this.offEvents.push(
+      this.events.on('proposal.status.changed', () => this.refreshMine()),
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.offEvents.forEach((off) => off());
   }
 
   private refreshMine(): void {
@@ -182,13 +220,15 @@ export class ProposeComponent implements OnInit {
     this.error.set(null);
     this.api.create({
       title: this.title.trim(),
-      description: this.description.trim()
+      description: this.description.trim(),
+      imageUrl: this.imageUrl
     }).subscribe({
       next: () => {
         this.submitting.set(false);
         this.success.set(true);
         this.title = '';
         this.description = '';
+        this.imageUrl = null;
         this.refreshMine();
       },
       error: (err) => {

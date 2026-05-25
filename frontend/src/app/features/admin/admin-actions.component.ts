@@ -1,14 +1,16 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { ActionsService, CharityAction } from '../../core/actions.service';
 import { ProposalsService } from '../../core/proposals.service';
+import { EventsService } from '../../core/events.service';
+import { QrModalComponent } from '../../shared/qr-modal.component';
 
 @Component({
   selector: 'app-admin-actions',
   standalone: true,
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, QrModalComponent],
   template: `
     <div class="container" style="padding: 32px 0 64px;">
       <div class="admin-head">
@@ -53,7 +55,11 @@ import { ProposalsService } from '../../core/proposals.service';
       </div>
 
       @if (loading()) {
-        <p class="muted" style="padding: 24px 0;">Loading…</p>
+        <div class="table-wrap" aria-hidden="true" style="padding: 12px 20px;">
+          @for (i of [1,2,3,4,5]; track i) {
+            <span class="skeleton skeleton--row"></span>
+          }
+        </div>
       } @else if (actions().length === 0) {
         <div class="table-wrap" style="padding: 48px 24px; text-align: center;">
           <p class="muted">No actions yet. <a routerLink="/admin/actions/new" style="color:var(--navy);">Create the first one.</a></p>
@@ -104,6 +110,11 @@ import { ProposalsService } from '../../core/proposals.service';
                   </td>
                   <td>
                     <div class="row-actions">
+                      <button class="icon-btn" type="button" aria-label="Share with QR"
+                              title="Share with QR"
+                              (click)="openQr(a)">
+                        <i class="pi pi-qrcode"></i>
+                      </button>
                       <a class="icon-btn" [routerLink]="['/admin/actions', a.id, 'edit']"
                          aria-label="Edit">
                         <i class="pi pi-pencil"></i>
@@ -127,6 +138,14 @@ import { ProposalsService } from '../../core/proposals.service';
             </tbody>
           </table>
         </div>
+      }
+
+      @if (qrAction(); as qa) {
+        <app-qr-modal
+          [actionId]="qa.id"
+          [actionTitle]="qa.title"
+          [open]="true"
+          (closed)="qrAction.set(null)" />
       }
     </div>
   `,
@@ -221,14 +240,23 @@ import { ProposalsService } from '../../core/proposals.service';
     }
   `]
 })
-export class AdminActionsComponent implements OnInit {
+export class AdminActionsComponent implements OnInit, OnDestroy {
   private actionsApi = inject(ActionsService);
   private proposalsApi = inject(ProposalsService);
+  private events = inject(EventsService);
+
+  /** SSE unsubscribe handles. */
+  private offEvents: Array<() => void> = [];
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly loading = signal(true);
   readonly actions = signal<CharityAction[]>([]);
   readonly busy = signal<number | null>(null);
   readonly pendingProposals = signal(0);
+  /** The action whose QR modal is currently open (or null). */
+  readonly qrAction = signal<CharityAction | null>(null);
+
+  openQr(a: CharityAction): void { this.qrAction.set(a); }
 
   readonly openCount = computed(() => this.actions().filter(a => !a.isClosed).length);
   readonly closedCount = computed(() => this.actions().filter(a => a.isClosed).length);
@@ -242,6 +270,30 @@ export class AdminActionsComponent implements OnInit {
 
   ngOnInit(): void {
     this.refresh();
+    this.refreshPending();
+
+    // Real-time: refresh table on any action change, refresh proposals badge on any proposal change.
+    this.offEvents.push(
+      this.events.on('action.', () => this.scheduleRefresh()),
+      this.events.on('registration.', () => this.scheduleRefresh()),
+      this.events.on('proposal.', () => this.refreshPending()),
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.offEvents.forEach((off) => off());
+    if (this.refreshTimer) clearTimeout(this.refreshTimer);
+  }
+
+  private scheduleRefresh(): void {
+    if (this.refreshTimer) return;
+    this.refreshTimer = setTimeout(() => {
+      this.refreshTimer = null;
+      this.refresh();
+    }, 200);
+  }
+
+  private refreshPending(): void {
     this.proposalsApi.listAll('PENDING').subscribe({
       next: (ps) => this.pendingProposals.set(ps.length),
       error: () => this.pendingProposals.set(0)

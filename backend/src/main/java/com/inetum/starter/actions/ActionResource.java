@@ -27,7 +27,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Path("/actions")
 @Produces(MediaType.APPLICATION_JSON)
@@ -54,11 +53,8 @@ public class ActionResource {
 
         var ids = actions.stream().map(ActionEntity::getId).toList();
         Map<Long, Long> counts = registrationRepository.countsForActions(ids);
-        Set<Long> myRegisteredActionIds = ids.isEmpty()
-                ? Set.of()
-                : registrationRepository
-                        .find("userId = ?1 and actionId in ?2", currentUserId(), ids)
-                        .stream().map(r -> r.getActionId()).collect(Collectors.toSet());
+        Set<Long> myRegisteredActionIds =
+                registrationRepository.actionIdsRegisteredByUser(currentUserId(), ids);
 
         var response = actions.stream()
                 .map(a -> actionMapper.toResponseWithCounts(
@@ -87,9 +83,12 @@ public class ActionResource {
                 body.getDescription(),
                 body.getActionDate(),
                 body.getLocation(),
+                body.getLatitude(),
+                body.getLongitude(),
                 body.getCapacity(),
                 body.getOddTag(),
-                body.getImpactSummary());
+                body.getImpactSummary(),
+                body.getImageUrl());
         return RestResponse.ResponseBuilder
                 .ok(actionMapper.toResponseWithCounts(action, 0, false))
                 .status(RestResponse.Status.CREATED)
@@ -107,9 +106,12 @@ public class ActionResource {
                 body.getDescription(),
                 body.getActionDate(),
                 body.getLocation(),
+                body.getLatitude(),
+                body.getLongitude(),
                 body.getCapacity(),
                 body.getOddTag(),
-                body.getImpactSummary());
+                body.getImpactSummary(),
+                body.getImageUrl());
         int count = (int) registrationRepository.countForAction(id);
         boolean mine = registrationRepository.find(currentUserId(), id).isPresent();
         return RestResponse.ok(actionMapper.toResponseWithCounts(action, count, mine));

@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -37,6 +38,13 @@ public class ActionEntity {
     @Column(length = 200)
     private String location;
 
+    /** Geographic coordinates for the map view. Nullable for legacy rows. */
+    @Column(precision = 9, scale = 6)
+    private BigDecimal latitude;
+
+    @Column(precision = 9, scale = 6)
+    private BigDecimal longitude;
+
     @Column(nullable = false)
     private Integer capacity;
 
@@ -48,6 +56,14 @@ public class ActionEntity {
 
     @Column(name = "impact_summary", columnDefinition = "text")
     private String impactSummary;
+
+    /**
+     * Cover image. Either a fully-qualified external URL ("https://…")
+     * or a relative path to an uploaded file ("/files/{uuid}"). Frontend
+     * renders both the same way via {@code <img src>}.
+     */
+    @Column(name = "image_url", length = 2000)
+    private String imageUrl;
 
     @Column(name = "created_by", nullable = false)
     private Long createdBy;

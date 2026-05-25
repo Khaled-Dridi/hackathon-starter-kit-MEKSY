@@ -11,6 +11,12 @@
 
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
+        <!-- Required by quarkus-langchain4j @RegisterAiService — its
+             generated impl reads method parameter names at runtime to
+             map them as Qute template variables. Without this flag the
+             names are stripped, parameter-name lookups return null, and
+             Qute throws NullPointerException in TemplateInstanceBase.data. -->
+        <maven.compiler.parameters>true</maven.compiler.parameters>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
@@ -119,6 +125,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
+
+        <!-- Scheduler: drives SSE heartbeat in EventBus -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
         </dependency>
 
         <!-- Tests -->

@@ -10,10 +10,15 @@ export interface CharityAction {
   description: string;
   actionDate: string;
   location: string | null;
+  /** Map coordinates — both present together or both null. */
+  latitude: number | null;
+  longitude: number | null;
   capacity: number;
   oddTag: string | null;
   isClosed: boolean;
   impactSummary: string | null;
+  /** External URL or "/files/{uuid}". May be null. */
+  imageUrl: string | null;
   registeredCount: number;
   seatsRemaining: number;
   currentUserRegistered: boolean;
@@ -26,9 +31,12 @@ export interface CharityActionInput {
   description?: string;
   actionDate: string;
   location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   capacity: number;
   oddTag?: string | null;
   impactSummary?: string | null;
+  imageUrl?: string | null;
 }
 
 export interface Registrant {

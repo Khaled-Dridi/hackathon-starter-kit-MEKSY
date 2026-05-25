@@ -6,9 +6,11 @@ import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -26,12 +28,52 @@ public class RegistrationRepository implements PanacheRepository<RegistrationEnt
         return count("actionId", actionId);
     }
 
+    /**
+     * Returns a map of actionId → registration count for the given action ids.
+     * <p>
+     * Implementation note: this uses a single SQL aggregate ({@code GROUP BY action_id})
+     * and returns at most {@code actionIds.size()} rows. Previously this method
+     * hydrated every matching {@link RegistrationEntity} row as a managed JPA
+     * entity and counted them in Java, which made the list-actions endpoint
+     * O(total-registrations) and very slow as soon as the registrations table
+     * grew. The grouped query is index-friendly (idx_registrations_action).
+     */
     public Map<Long, Long> countsForActions(List<Long> actionIds) {
         if (actionIds == null || actionIds.isEmpty()) return Map.of();
-        return find("actionId in ?1", actionIds).list().stream()
-                .collect(Collectors.groupingBy(
-                        RegistrationEntity::getActionId,
-                        Collectors.counting()));
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = getEntityManager()
+                .createQuery(
+                        "select r.actionId, count(r) " +
+                        "from RegistrationEntity r " +
+                        "where r.actionId in :ids " +
+                        "group by r.actionId")
+                .setParameter("ids", actionIds)
+                .getResultList();
+        Map<Long, Long> result = new HashMap<>(rows.size());
+        for (Object[] row : rows) {
+            result.put((Long) row[0], (Long) row[1]);
+        }
+        return result;
+    }
+
+    /**
+     * Returns the subset of {@code actionIds} that the given user is registered
+     * for. Uses a projection on {@code action_id} only — no entity hydration —
+     * because the caller only needs ids. Backed by the unique
+     * (user_id, action_id) index, so this is a cheap index scan.
+     */
+    public Set<Long> actionIdsRegisteredByUser(Long userId, List<Long> actionIds) {
+        if (actionIds == null || actionIds.isEmpty()) return Set.of();
+        List<Long> rows = getEntityManager()
+                .createQuery(
+                        "select r.actionId " +
+                        "from RegistrationEntity r " +
+                        "where r.userId = :userId and r.actionId in :ids",
+                        Long.class)
+                .setParameter("userId", userId)
+                .setParameter("ids", actionIds)
+                .getResultList();
+        return rows.stream().collect(Collectors.toSet());
     }
 
     public long distinctUsersSince(LocalDateTime since) {

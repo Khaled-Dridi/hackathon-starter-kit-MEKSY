@@ -1,16 +1,20 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 
 import { ActionsService, CharityAction } from '../../core/actions.service';
 import { StatsService } from '../../core/stats.service';
+import { EventsService } from '../../core/events.service';
+import { ActionMapComponent } from '../../shared/action-map.component';
 
 type Filter = 'all' | 'open' | 'month';
+type ViewMode = 'grid' | 'map';
+const VIEW_MODE_KEY = 'actions.viewMode';
 
 @Component({
   selector: 'app-actions-list',
   standalone: true,
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, ActionMapComponent],
   template: `
     <section class="section--hero">
       <div class="container">
@@ -37,17 +41,68 @@ type Filter = 'all' | 'open' | 'month';
           <button type="button" role="tab" [attr.aria-pressed]="filter() === 'month'"
                   (click)="setFilter('month')">This month</button>
         </div>
+
+        <div class="view-toggle" role="tablist" aria-label="View mode">
+          <button type="button" role="tab" [attr.aria-pressed]="view() === 'grid'"
+                  (click)="setView('grid')" title="Grid view">
+            <i class="pi pi-th-large"></i> Grid
+          </button>
+          <button type="button" role="tab" [attr.aria-pressed]="view() === 'map'"
+                  (click)="setView('map')" title="Map view">
+            <i class="pi pi-map-marker"></i> Map
+            @if (mapPinCount() > 0) {
+              <span class="view-toggle__count">{{ mapPinCount() }}</span>
+            }
+          </button>
+        </div>
       </div>
 
       @if (loading()) {
-        <p class="empty-state">Loading actions…</p>
+        <div class="actions-grid" aria-hidden="true">
+          @for (i of [1,2,3,4,5,6]; track i) {
+            <div class="card action-card">
+              <span class="skeleton skeleton--thumb"></span>
+              <div class="action-card__body">
+                <span class="skeleton skeleton--line is-short"></span>
+                <span class="skeleton skeleton--title"></span>
+                <span class="skeleton skeleton--line is-short"></span>
+                <div class="action-card__foot">
+                  <span class="skeleton skeleton--pill"></span>
+                  <span class="skeleton skeleton--line is-short" style="width:80px;"></span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (view() === 'map') {
+        @if (mapPinCount() === 0) {
+          <p class="empty-state">
+            No actions on the map yet — admins need to set coordinates on
+            actions before they show up here.
+          </p>
+        } @else {
+          <app-action-map [actions]="filtered()" [height]="560" />
+          @if (mapPinCount() < filtered().length) {
+            <p class="map-hint">
+              <i class="pi pi-info-circle"></i>
+              Showing {{ mapPinCount() }} of {{ filtered().length }} actions —
+              the rest have no coordinates set yet.
+            </p>
+          }
+        }
       } @else if (filtered().length === 0) {
         <p class="empty-state">No actions match this filter yet.</p>
       } @else {
         <div class="actions-grid">
           @for (a of filtered(); track a.id) {
             <a class="card action-card" [routerLink]="['/actions', a.id]">
-              <span class="thumb" [class]="thumbClass(a.id)" aria-hidden="true"></span>
+              @if (a.imageUrl) {
+                <span class="thumb thumb--image" aria-hidden="true">
+                  <img [src]="a.imageUrl" [alt]="" loading="lazy" />
+                </span>
+              } @else {
+                <span class="thumb" [class]="thumbClass(a.id)" aria-hidden="true"></span>
+              }
               <div class="action-card__body">
                 <div class="action-card__date">
                   <span class="day">{{ a.actionDate | date:'EEE, MMM d' }}</span>
@@ -118,10 +173,59 @@ type Filter = 'all' | 'open' | 'month';
     .filter-row {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 12px;
       padding: 20px 0 24px;
       flex-wrap: wrap;
     }
+
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      padding: 3px;
+      background: var(--surface);
+      border-radius: 999px;
+    }
+    .view-toggle button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .view-toggle button i { font-size: 12px; }
+    .view-toggle button[aria-pressed="true"] {
+      background: var(--white);
+      color: var(--navy);
+      box-shadow: 0 1px 2px rgba(32,44,80,0.08);
+    }
+    .view-toggle button:hover:not([aria-pressed="true"]) { color: var(--text); }
+    .view-toggle__count {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 999px;
+      margin-left: 2px;
+    }
+
+    .map-hint {
+      margin-top: 12px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .map-hint i { font-size: 12px; }
     .filter-tabs {
       display: flex;
       gap: 4px;
@@ -158,6 +262,19 @@ type Filter = 'all' | 'open' | 'month';
 
     .action-card { display: flex; flex-direction: column; }
     .action-card .thumb { aspect-ratio: 16 / 10; }
+    /* When the action has an uploaded/external image, the thumb hosts an
+       <img> instead of a gradient. The img fills the slot with object-fit. */
+    .action-card .thumb--image {
+      background: var(--surface-2);
+      overflow: hidden;
+      position: relative;
+    }
+    .action-card .thumb--image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
     .action-card__body {
       padding: 18px 20px 22px;
       display: flex;
@@ -204,17 +321,31 @@ type Filter = 'all' | 'open' | 'month';
     .empty-state { padding: 48px 0; text-align: center; color: var(--text-muted); }
   `]
 })
-export class ActionsListComponent implements OnInit {
+export class ActionsListComponent implements OnInit, OnDestroy {
   private actionsApi = inject(ActionsService);
   private statsApi = inject(StatsService);
+  private events = inject(EventsService);
+
+  /** SSE unsubscribe handles, called in ngOnDestroy. */
+  private offEvents: Array<() => void> = [];
+  /** Coalesces bursts of events into a single refresh. */
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly loading = signal(true);
   readonly actions = signal<CharityAction[]>([]);
   readonly engagement = signal<{ distinctParticipants: number; since: string } | null>(null);
   readonly filter = signal<Filter>('all');
+  /** Persisted in localStorage so the user's choice survives reloads. */
+  readonly view = signal<ViewMode>(
+    (localStorage.getItem(VIEW_MODE_KEY) as ViewMode) === 'map' ? 'map' : 'grid'
+  );
 
   readonly openCount = computed(() =>
     this.actions().filter(a => !a.isClosed && a.seatsRemaining > 0).length);
+
+  /** How many of the currently filtered actions can actually be plotted (have coords). */
+  readonly mapPinCount = computed(() =>
+    this.filtered().filter(a => a.latitude !== null && a.longitude !== null).length);
 
   readonly seasonYear = computed(() => {
     const s = this.engagement()?.since;
@@ -238,10 +369,41 @@ export class ActionsListComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.refresh();
+    this.refreshEngagement();
+
+    // Real-time: refresh whenever anything that affects the list happens.
+    // `registration.*` events change seat counts and the "you're registered"
+    // flag; `action.*` covers create/update/close/delete/seats.changed.
+    this.offEvents.push(
+      this.events.on('action.', () => this.scheduleRefresh()),
+      this.events.on('registration.', () => this.scheduleRefresh()),
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.offEvents.forEach((off) => off());
+    if (this.refreshTimer) clearTimeout(this.refreshTimer);
+  }
+
+  /** Debounced refresh — 200 ms is long enough to coalesce bursts and short enough to feel live. */
+  private scheduleRefresh(): void {
+    if (this.refreshTimer) return;
+    this.refreshTimer = setTimeout(() => {
+      this.refreshTimer = null;
+      this.refresh();
+      this.refreshEngagement();
+    }, 200);
+  }
+
+  private refresh(): void {
     this.actionsApi.list().subscribe({
       next: (data) => { this.actions.set(data); this.loading.set(false); },
       error: () => this.loading.set(false)
     });
+  }
+
+  private refreshEngagement(): void {
     this.statsApi.engagement().subscribe({
       next: (s) => this.engagement.set(s)
     });
@@ -249,6 +411,11 @@ export class ActionsListComponent implements OnInit {
 
   setFilter(f: Filter): void {
     this.filter.set(f);
+  }
+
+  setView(v: ViewMode): void {
+    this.view.set(v);
+    localStorage.setItem(VIEW_MODE_KEY, v);
   }
 
   thumbClass(id: number): string {

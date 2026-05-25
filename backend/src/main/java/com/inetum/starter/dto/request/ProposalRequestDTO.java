@@ -17,4 +17,8 @@ public class ProposalRequestDTO {
 
     @Size(max = 50_000)
     private String description;
+
+    /** Optional cover image — external URL or "/files/{uuid}". */
+    @Size(max = 2000)
+    private String imageUrl;
 }

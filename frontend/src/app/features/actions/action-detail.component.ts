@@ -1,23 +1,55 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { ActionsService, CharityAction, Registrant } from '../../core/actions.service';
 import { AuthService } from '../../core/auth.service';
+import { EventsService } from '../../core/events.service';
+import { ActionMapComponent } from '../../shared/action-map.component';
+import { ActionFeedComponent } from '../../shared/action-feed.component';
+import { ActionChatComponent } from '../../shared/action-chat.component';
+import { QrModalComponent } from '../../shared/qr-modal.component';
 
 @Component({
   selector: 'app-action-detail',
   standalone: true,
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, ActionMapComponent, ActionFeedComponent, ActionChatComponent, QrModalComponent],
   template: `
     @if (loading()) {
-      <div class="container" style="padding: 56px 0;"><p class="muted">Loading…</p></div>
+      <div class="container">
+        <div class="detail" aria-hidden="true">
+          <div>
+            <span class="skeleton skeleton--line is-short" style="width:120px; margin-top:16px;"></span>
+            <span class="skeleton" style="height:36px; width:60%; margin:14px 0;"></span>
+            <span class="skeleton skeleton--line"></span>
+            <span class="skeleton skeleton--line"></span>
+            <span class="skeleton" style="aspect-ratio:16/7; width:100%; margin:24px 0 32px; border-radius:12px;"></span>
+            <span class="skeleton skeleton--line"></span>
+            <span class="skeleton skeleton--line"></span>
+            <span class="skeleton skeleton--line is-short"></span>
+          </div>
+          <aside class="aside">
+            <div class="registration">
+              <span class="skeleton skeleton--line is-short"></span>
+              <span class="skeleton" style="height:32px; width:50%; margin:12px 0;"></span>
+              <span class="skeleton" style="height:4px; width:100%; margin:8px 0 16px;"></span>
+              <span class="skeleton" style="height:44px; width:100%; border-radius:8px;"></span>
+            </div>
+          </aside>
+        </div>
+      </div>
     } @else if (action(); as a) {
       <div class="container">
         <nav class="breadcrumb" aria-label="Breadcrumb">
-          <a routerLink="/actions">Actions</a>
-          <span class="breadcrumb__sep">/</span>
-          <span>{{ a.title }}</span>
+          <div class="breadcrumb__crumbs">
+            <a routerLink="/actions">Actions</a>
+            <span class="breadcrumb__sep">/</span>
+            <span>{{ a.title }}</span>
+          </div>
+          <button type="button" class="qr-trigger" (click)="qrOpen.set(true)"
+                  title="Share with a QR code">
+            <i class="pi pi-qrcode"></i> Share with QR
+          </button>
         </nav>
 
         <article class="detail">
@@ -34,7 +66,12 @@ import { AuthService } from '../../core/auth.service';
               }
             </header>
 
-            <div class="detail__cover" role="img" [attr.aria-label]="'Visual for ' + a.title"></div>
+            @if (a.imageUrl) {
+              <img class="detail__cover detail__cover--image" [src]="a.imageUrl"
+                   [alt]="'Cover image for ' + a.title" />
+            } @else {
+              <div class="detail__cover" role="img" [attr.aria-label]="'Visual for ' + a.title"></div>
+            }
 
             <section class="prose">
               @if (a.description) {
@@ -68,11 +105,29 @@ import { AuthService } from '../../core/auth.service';
                 }
               </dl>
 
+              @if (a.latitude !== null && a.longitude !== null) {
+                <div class="detail__map">
+                  <app-action-map [actions]="[a]" [height]="280" />
+                </div>
+              }
+
               @if (a.impactSummary) {
                 <h2>Reported impact</h2>
                 <p>{{ a.impactSummary }}</p>
               }
             </section>
+
+            <app-action-feed [actionId]="a.id" />
+
+            <app-action-chat
+              [actionId]="a.id"
+              [canChat]="a.currentUserRegistered || isAdmin()" />
+
+            <app-qr-modal
+              [actionId]="a.id"
+              [actionTitle]="a.title"
+              [open]="qrOpen()"
+              (closed)="qrOpen.set(false)" />
           </div>
 
           <aside class="aside" aria-label="Registration">
@@ -159,10 +214,36 @@ import { AuthService } from '../../core/auth.service';
     }
   `,
   styles: [`
-    .breadcrumb { padding: 16px 0 0; font-size: 13px; color: var(--text-muted); }
+    .breadcrumb {
+      padding: 16px 0 0;
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .breadcrumb__crumbs { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .breadcrumb a { color: var(--text-muted); text-decoration: none; }
     .breadcrumb a:hover { color: var(--navy); }
     .breadcrumb__sep { margin: 0 8px; color: var(--text-subtle); }
+    .qr-trigger {
+      appearance: none;
+      background: var(--white);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--navy);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .qr-trigger:hover { background: var(--surface); border-color: var(--navy); }
+    .qr-trigger i { font-size: 12px; }
 
     .detail {
       display: grid;
@@ -199,6 +280,11 @@ import { AuthService } from '../../core/auth.service';
       border-radius: var(--radius-lg);
       margin: 24px 0 32px;
     }
+    .detail__cover--image {
+      object-fit: cover;
+      display: block;
+      background: var(--surface-2);
+    }
     .detail h2 {
       font-size: 20px;
       letter-spacing: -0.01em;
@@ -212,6 +298,13 @@ import { AuthService } from '../../core/auth.service';
       line-height: 1.65;
       color: var(--text);
       max-width: 64ch;
+    }
+
+    .detail__map {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
     }
 
     .aside {
@@ -299,22 +392,53 @@ import { AuthService } from '../../core/auth.service';
     }
   `]
 })
-export class ActionDetailComponent implements OnInit {
+export class ActionDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private actionsApi = inject(ActionsService);
   private auth = inject(AuthService);
+  private events = inject(EventsService);
+
+  /** SSE unsubscribe handles. */
+  private offEvents: Array<() => void> = [];
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  /** The action id this page is bound to — set in ngOnInit. */
+  private actionId = 0;
 
   readonly loading = signal(true);
   readonly action = signal<CharityAction | null>(null);
   readonly registrants = signal<Registrant[] | null>(null);
+  /** Controls the QR-modal overlay. */
+  readonly qrOpen = signal(false);
   readonly busy = signal(false);
   readonly errorMsg = signal<string | null>(null);
 
   readonly isAdmin = computed(() => this.auth.hasRole('ADMIN'));
 
   ngOnInit(): void {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    this.loadAction(id);
+    this.actionId = Number(this.route.snapshot.paramMap.get('id'));
+    this.loadAction(this.actionId);
+
+    // Real-time: only react to events scoped to this action (or to action.deleted/updated for it).
+    const relevant = (ev: { actionId: number | null }) =>
+      ev.actionId === this.actionId;
+
+    this.offEvents.push(
+      this.events.on('action.', (ev) => { if (relevant(ev)) this.scheduleRefresh(); }),
+      this.events.on('registration.', (ev) => { if (relevant(ev)) this.scheduleRefresh(); }),
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.offEvents.forEach((off) => off());
+    if (this.refreshTimer) clearTimeout(this.refreshTimer);
+  }
+
+  private scheduleRefresh(): void {
+    if (this.refreshTimer) return;
+    this.refreshTimer = setTimeout(() => {
+      this.refreshTimer = null;
+      this.loadAction(this.actionId);
+    }, 200);
   }
 
   private loadAction(id: number): void {

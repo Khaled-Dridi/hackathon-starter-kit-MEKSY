@@ -1,9 +1,11 @@
 package com.inetum.starter.service.ai;
 
 import com.inetum.starter.dto.mapper.ChatMapper;
+import com.inetum.starter.dto.request.AssistantChatRequestDTO;
 import com.inetum.starter.dto.request.ChatRequestDTO;
 import com.inetum.starter.dto.request.CreateSessionDTO;
 import com.inetum.starter.dto.request.GenerateDescriptionDTO;
+import com.inetum.starter.dto.response.AssistantChatResponseDTO;
 import com.inetum.starter.dto.response.ChatResponseDTO;
 import com.inetum.starter.dto.response.GeneratedDescriptionDTO;
 import com.inetum.starter.dto.response.MessageResponseDTO;
@@ -38,6 +40,7 @@ public class AiResource {
     private static final Logger LOG = Logger.getLogger(AiResource.class);
 
     private final AiAssistant assistant;
+    private final CharityAssistantService charityAssistant;
     private final ChatSessionService sessionService;
     private final ChatMapper chatMapper;
     private final JsonWebToken jwt;
@@ -103,5 +106,23 @@ public class AiResource {
         LOG.debugf("AI describe action (title len=%d)", body.getTitle().length());
         String description = assistant.generateActionDescription(body.getTitle());
         return RestResponse.ok(new GeneratedDescriptionDTO(description));
+    }
+
+    /**
+     * Conversational assistant for users — knows the platform, the
+     * currently-open actions, and the caller's registration status, and
+     * helps them pick the right action for the year.
+     * <p>
+     * Multi-turn memory is keyed by the {@code sessionId} the client
+     * generates once per browser session.
+     */
+    @POST
+    @Path("/assistant/chat")
+    public RestResponse<AssistantChatResponseDTO> assistantChat(@Valid AssistantChatRequestDTO request) {
+        LOG.debugf("Assistant chat session=%s len=%d",
+                request.getSessionId(), request.getMessage().length());
+        AssistantChatResponseDTO reply = charityAssistant.chat(
+                request.getSessionId(), currentUserId(), request.getMessage());
+        return RestResponse.ok(reply);
     }
 }

@@ -2,11 +2,12 @@ import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { AuthService } from '../core/auth.service';
+import { AiAssistantWidgetComponent } from '../shared/ai-assistant-widget.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AiAssistantWidgetComponent],
   template: `
     <header class="app-header">
       <div class="app-header__inner">
@@ -42,6 +43,8 @@ import { AuthService } from '../core/auth.service';
         <span>Internal use only</span>
       </div>
     </footer>
+
+    <app-ai-assistant-widget />
   `,
   styles: [`
     :host { display: flex; flex-direction: column; min-height: 100vh; background: var(--white); }

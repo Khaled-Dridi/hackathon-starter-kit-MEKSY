@@ -40,6 +40,13 @@ public class ProposalEntity {
     @Column(nullable = false, length = 32)
     private ProposalStatus status = ProposalStatus.PENDING;
 
+    /**
+     * Cover image for the proposal — either an external URL or "/files/{uuid}".
+     * Optional: a proposer may submit text-only or attach an image.
+     */
+    @Column(name = "image_url", length = 2000)
+    private String imageUrl;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

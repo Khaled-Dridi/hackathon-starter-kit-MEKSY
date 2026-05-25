@@ -17,6 +17,7 @@ services:
       QUARKUS_DATASOURCE_USERNAME: ${POSTGRES_USER:-inetum}
       QUARKUS_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-inetum}
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-inetum}
+      QUARKUS_LANGCHAIN4J_OPENAI_BASE_URL: ${OPENAI_API_BASE_URL:-https://api.openai.com/v1}
       QUARKUS_LANGCHAIN4J_OPENAI_API_KEY: ${OPENAI_API_KEY:-placeholder-set-OPENAI_API_KEY-env}
       QUARKUS_LANGCHAIN4J_OPENAI_CHAT_MODEL_MODEL_NAME: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
 
@@ -28,7 +29,11 @@ services:
     volumes:
       - ../frontend:/app
       - node-modules:/app/node_modules
-    command: sh -c "npm ci && npm start -- --host 0.0.0.0 --poll 1000"
+    # Use `npm install` (not `npm ci`) so the dev container tolerates new
+    # deps added to package.json without manually regenerating
+    # package-lock.json first. CI builds still use `npm ci` for
+    # reproducibility.
+    command: sh -c "npm install --no-audit --no-fund && npm start -- --host 0.0.0.0 --poll 1000"
     ports: !override
       - "4200:4200"
     environment:

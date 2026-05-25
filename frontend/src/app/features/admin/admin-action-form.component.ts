@@ -4,11 +4,13 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { ActionsService, CharityAction } from '../../core/actions.service';
 import { AiService } from '../../core/ai.service';
+import { ActionMapComponent } from '../../shared/action-map.component';
+import { ImagePickerComponent } from '../../shared/image-picker.component';
 
 @Component({
   selector: 'app-admin-action-form',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, ActionMapComponent, ImagePickerComponent],
   template: `
     <div class="container container--narrow" style="padding: 24px 0 64px;">
       <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -78,6 +80,16 @@ import { AiService } from '../../core/ai.service';
         </section>
 
         <section class="form-card">
+          <h2>Cover image</h2>
+          <p class="section-subtitle" style="margin-bottom: 14px;">
+            Optional. Upload a photo or paste a URL — appears on action cards
+            and at the top of the detail page. Leave empty to keep the
+            default decorative thumbnail.
+          </p>
+          <app-image-picker [value]="imageUrl" (valueChange)="imageUrl = $event" />
+        </section>
+
+        <section class="form-card">
           <h2>When &amp; where</h2>
 
           <div class="grid-2">
@@ -99,6 +111,31 @@ import { AiService } from '../../core/ai.service';
                    placeholder="e.g. Paris 11ᵉ · République"
                    [(ngModel)]="location" maxlength="200" />
             <p class="field__hint">Leave empty for remote or unspecified.</p>
+          </div>
+
+          <div class="field" style="margin-top: 16px;">
+            <div class="field__row">
+              <label class="field__label">Pin on the map</label>
+              @if (latitude !== null && longitude !== null) {
+                <button type="button" class="link-btn" (click)="clearCoords()">
+                  Clear pin
+                </button>
+              } @else {
+                <span class="field__hint">Click anywhere on the map to drop a pin</span>
+              }
+            </div>
+            <app-action-map
+              [pickable]="true"
+              [initialPick]="initialPick()"
+              [height]="320"
+              (picked)="onPicked($event)" />
+            @if (latitude !== null && longitude !== null) {
+              <p class="field__hint" style="margin-top: 8px;">
+                <i class="pi pi-map-marker"></i>
+                {{ latitude!.toFixed(5) }}, {{ longitude!.toFixed(5) }} ·
+                drag the pin to fine-tune
+              </p>
+            }
           </div>
         </section>
 
@@ -253,6 +290,25 @@ import { AiService } from '../../core/ai.service';
       margin-top: 24px;
       padding: 16px 0;
     }
+
+    .field__row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .link-btn {
+      appearance: none;
+      background: transparent;
+      border: 0;
+      color: var(--navy);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+    }
+    .link-btn:hover { text-decoration: underline; }
   `]
 })
 export class AdminActionFormComponent implements OnInit {
@@ -269,9 +325,12 @@ export class AdminActionFormComponent implements OnInit {
   date = '';
   time = '09:00';
   location = '';
+  latitude: number | null = null;
+  longitude: number | null = null;
   capacity = 10;
   oddTag: string | null = null;
   impactSummary = '';
+  imageUrl: string | null = null;
 
   readonly aiBusy = signal(false);
   readonly aiPreview = signal<string | null>(null);
@@ -304,9 +363,31 @@ export class AdminActionFormComponent implements OnInit {
     this.date = d ?? '';
     this.time = (t ?? '09:00:00').substring(0, 5);
     this.location = a.location ?? '';
+    this.latitude = a.latitude ?? null;
+    this.longitude = a.longitude ?? null;
     this.capacity = a.capacity;
     this.oddTag = a.oddTag ?? null;
     this.impactSummary = a.impactSummary ?? '';
+    this.imageUrl = a.imageUrl ?? null;
+  }
+
+  /** Feeds the map component's `initialPick` input. */
+  initialPick(): { lat: number; lng: number } | null {
+    return this.latitude !== null && this.longitude !== null
+      ? { lat: this.latitude, lng: this.longitude }
+      : null;
+  }
+
+  onPicked(p: { lat: number; lng: number }): void {
+    // Round to 6 decimals to match the DB's DECIMAL(9,6) and avoid validator
+    // grumbles about extra precision.
+    this.latitude = Math.round(p.lat * 1e6) / 1e6;
+    this.longitude = Math.round(p.lng * 1e6) / 1e6;
+  }
+
+  clearCoords(): void {
+    this.latitude = null;
+    this.longitude = null;
   }
 
   generate(): void {
@@ -346,9 +427,12 @@ export class AdminActionFormComponent implements OnInit {
       description: this.description.trim(),
       actionDate,
       location: this.location.trim() || null,
+      latitude: this.latitude,
+      longitude: this.longitude,
       capacity: this.capacity,
       oddTag: this.oddTag,
-      impactSummary: this.impactSummary.trim() || null
+      impactSummary: this.impactSummary.trim() || null,
+      imageUrl: this.imageUrl
     };
 
     const id = this.editId();

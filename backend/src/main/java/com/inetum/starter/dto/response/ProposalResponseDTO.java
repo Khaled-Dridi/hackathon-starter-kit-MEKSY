@@ -19,6 +19,7 @@ public class ProposalResponseDTO {
     private String title;
     private String description;
     private ProposalStatus status;
+    private String imageUrl;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private LocalDateTime createdAt;

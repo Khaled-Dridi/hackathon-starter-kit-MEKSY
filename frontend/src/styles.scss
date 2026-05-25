@@ -71,13 +71,16 @@ a { color: inherit; }
 .app-header {
   height: var(--header-h);
   border-bottom: 1px solid var(--border);
+  /* z-index 1000 sits above Leaflet's highest control layer (800), so the
+     map's zoom buttons / popups / attribution don't bleed over the header
+     when the user scrolls. */
   background: var(--white);
   display: flex;
   align-items: center;
   padding: 0 var(--gutter);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 1000;
 }
 .app-header__inner {
   max-width: var(--container);
@@ -463,11 +466,45 @@ table.table { width: 100%; border-collapse: collapse; font-size: 14px; }
 }
 .dl dd { margin: 0; font-size: 14.5px; color: var(--text); line-height: 1.45; }
 
+/* ------------------------------------------------------------------
+   Skeleton placeholders (used while initial data is loading).
+   Subtle shimmer, brand-neutral; no yellow.
+   ------------------------------------------------------------------ */
+.skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 0%,
+    rgba(255,255,255,0.65) 50%,
+    var(--surface-2) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius-sm);
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  color: transparent;
+  user-select: none;
+  pointer-events: none;
+}
+.skeleton--thumb { aspect-ratio: 16 / 10; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+.skeleton--title { height: 18px; width: 70%; margin: 12px 0 8px; }
+.skeleton--line  { height: 12px; width: 100%; margin: 6px 0; }
+.skeleton--line.is-short { width: 40%; }
+.skeleton--pill  { height: 18px; width: 64px; border-radius: 999px; }
+.skeleton--row   { height: 44px; width: 100%; margin: 8px 0; }
+.skeleton--stat  { height: 90px; width: 100%; }
+.skeleton--card  { height: 120px; width: 100%; margin-bottom: 12px; }
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+  .skeleton { animation: none; }
 }
 
 @media (max-width: 720px) {

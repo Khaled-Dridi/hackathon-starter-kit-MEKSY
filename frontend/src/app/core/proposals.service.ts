@@ -13,6 +13,8 @@ export interface Proposal {
   title: string;
   description: string;
   status: ProposalStatus;
+  /** Optional cover image — external URL or "/files/{uuid}". */
+  imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,6 +22,7 @@ export interface Proposal {
 export interface ProposalInput {
   title: string;
   description?: string;
+  imageUrl?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

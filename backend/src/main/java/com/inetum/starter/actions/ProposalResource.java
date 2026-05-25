@@ -68,7 +68,8 @@ public class ProposalResource {
 
     @POST
     public RestResponse<ProposalResponseDTO> create(@Valid ProposalRequestDTO body) {
-        var proposal = proposalService.create(currentUserId(), body.getTitle(), body.getDescription());
+        var proposal = proposalService.create(
+                currentUserId(), body.getTitle(), body.getDescription(), body.getImageUrl());
         return RestResponse.ResponseBuilder
                 .ok(toResponseWithAuthor(proposal))
                 .status(RestResponse.Status.CREATED)

@@ -1,8 +1,9 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { Proposal, ProposalStatus, ProposalsService } from '../../core/proposals.service';
+import { EventsService } from '../../core/events.service';
 
 type Filter = 'all' | ProposalStatus;
 
@@ -41,7 +42,11 @@ type Filter = 'all' | ProposalStatus;
       </nav>
 
       @if (loading()) {
-        <p class="muted" style="padding: 24px 0;">Loading…</p>
+        <div class="stack-4" aria-hidden="true" style="margin-top: 8px;">
+          @for (i of [1,2,3]; track i) {
+            <span class="skeleton skeleton--card"></span>
+          }
+        </div>
       } @else if (filtered().length === 0) {
         <div class="table-wrap" style="padding: 48px 24px; text-align: center;">
           <p class="muted">No ideas in this view.</p>
@@ -49,48 +54,54 @@ type Filter = 'all' | ProposalStatus;
       } @else {
         <div class="stack-4" style="margin-top: 8px;">
           @for (p of filtered(); track p.id) {
-            <article class="proposal-card">
-              <div class="proposal-card__head">
-                <div>
-                  <h3>{{ p.title }}</h3>
-                  <p class="meta">
-                    Submitted by <strong>{{ p.authorEmail }}</strong>
-                    on {{ p.createdAt | date:'MMM d, y' }}
-                  </p>
-                </div>
-                @switch (p.status) {
-                  @case ('PENDING')  { <span class="pill pill--soon">Pending</span> }
-                  @case ('ACCEPTED') { <span class="pill pill--open pill--dot">Accepted</span> }
-                  @case ('REJECTED') { <span class="pill pill--full">Rejected</span> }
-                }
-              </div>
-
-              @if (p.description) {
-                <p class="proposal-card__desc">{{ p.description }}</p>
+            <article class="proposal-card" [class.proposal-card--with-image]="p.imageUrl">
+              @if (p.imageUrl) {
+                <img class="proposal-card__thumb" [src]="p.imageUrl"
+                     alt="" loading="lazy" />
               }
+              <div class="proposal-card__body">
+                <div class="proposal-card__head">
+                  <div>
+                    <h3>{{ p.title }}</h3>
+                    <p class="meta">
+                      Submitted by <strong>{{ p.authorEmail }}</strong>
+                      on {{ p.createdAt | date:'MMM d, y' }}
+                    </p>
+                  </div>
+                  @switch (p.status) {
+                    @case ('PENDING')  { <span class="pill pill--soon">Pending</span> }
+                    @case ('ACCEPTED') { <span class="pill pill--open pill--dot">Accepted</span> }
+                    @case ('REJECTED') { <span class="pill pill--full">Rejected</span> }
+                  }
+                </div>
 
-              <div class="proposal-card__actions">
-                @if (p.status !== 'ACCEPTED') {
-                  <button class="btn btn--primary btn--sm" type="button"
-                          [disabled]="busy() === p.id"
-                          (click)="setStatus(p, 'ACCEPTED')">
-                    Accept
-                  </button>
+                @if (p.description) {
+                  <p class="proposal-card__desc">{{ p.description }}</p>
                 }
-                @if (p.status !== 'REJECTED') {
-                  <button class="btn btn--danger-ghost btn--sm" type="button"
-                          [disabled]="busy() === p.id"
-                          (click)="setStatus(p, 'REJECTED')">
-                    Reject
-                  </button>
-                }
-                @if (p.status !== 'PENDING') {
-                  <button class="btn btn--ghost btn--sm" type="button"
-                          [disabled]="busy() === p.id"
-                          (click)="setStatus(p, 'PENDING')">
-                    Mark as pending
-                  </button>
-                }
+
+                <div class="proposal-card__actions">
+                  @if (p.status !== 'ACCEPTED') {
+                    <button class="btn btn--primary btn--sm" type="button"
+                            [disabled]="busy() === p.id"
+                            (click)="setStatus(p, 'ACCEPTED')">
+                      Accept
+                    </button>
+                  }
+                  @if (p.status !== 'REJECTED') {
+                    <button class="btn btn--danger-ghost btn--sm" type="button"
+                            [disabled]="busy() === p.id"
+                            (click)="setStatus(p, 'REJECTED')">
+                      Reject
+                    </button>
+                  }
+                  @if (p.status !== 'PENDING') {
+                    <button class="btn btn--ghost btn--sm" type="button"
+                            [disabled]="busy() === p.id"
+                            (click)="setStatus(p, 'PENDING')">
+                      Mark as pending
+                    </button>
+                  }
+                </div>
               </div>
             </article>
           }
@@ -165,6 +176,24 @@ type Filter = 'all' | ProposalStatus;
       border-radius: var(--radius-lg);
       padding: 20px 22px 22px;
     }
+    .proposal-card--with-image {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 20px;
+      padding: 16px;
+    }
+    @media (max-width: 640px) {
+      .proposal-card--with-image { grid-template-columns: 1fr; }
+    }
+    .proposal-card__thumb {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      display: block;
+    }
+    .proposal-card__body { min-width: 0; }
     .proposal-card__head {
       display: flex;
       align-items: flex-start;
@@ -187,8 +216,13 @@ type Filter = 'all' | ProposalStatus;
     .proposal-card__actions { display: flex; gap: 8px; }
   `]
 })
-export class AdminProposalsComponent implements OnInit {
+export class AdminProposalsComponent implements OnInit, OnDestroy {
   private api = inject(ProposalsService);
+  private events = inject(EventsService);
+
+  /** SSE unsubscribe handles. */
+  private offEvents: Array<() => void> = [];
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly loading = signal(true);
   readonly proposals = signal<Proposal[]>([]);
@@ -204,6 +238,24 @@ export class AdminProposalsComponent implements OnInit {
 
   ngOnInit(): void {
     this.refresh();
+
+    // Real-time: refresh on any proposal event (created, status changed).
+    this.offEvents.push(
+      this.events.on('proposal.', () => this.scheduleRefresh()),
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.offEvents.forEach((off) => off());
+    if (this.refreshTimer) clearTimeout(this.refreshTimer);
+  }
+
+  private scheduleRefresh(): void {
+    if (this.refreshTimer) return;
+    this.refreshTimer = setTimeout(() => {
+      this.refreshTimer = null;
+      this.refresh();
+    }, 200);
   }
 
   countOf(status: ProposalStatus): number {

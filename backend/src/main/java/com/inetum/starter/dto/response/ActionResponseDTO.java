@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -20,10 +21,13 @@ public class ActionResponseDTO {
     private LocalDateTime actionDate;
 
     private String location;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
     private Integer capacity;
     private String oddTag;
     private Boolean isClosed;
     private String impactSummary;
+    private String imageUrl;
 
     private Integer registeredCount;
     private Integer seatsRemaining;
