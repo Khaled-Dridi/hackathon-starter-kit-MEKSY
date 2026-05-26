@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { ActionsService, CharityAction } from '../../core/actions.service';
 import { AiService } from '../../core/ai.service';
@@ -10,18 +10,28 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
 @Component({
   selector: 'app-admin-action-form',
   standalone: true,
-  imports: [FormsModule, RouterLink, ActionMapComponent, ImagePickerComponent],
+  imports: [FormsModule, RouterLink, RouterLinkActive, ActionMapComponent, ImagePickerComponent],
   template: `
-    <div class="container container--narrow" style="padding: 24px 0 64px;">
+    <div class="subnav">
+      <div class="container">
+        <a class="tab" routerLink="/admin/actions" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: false }">Actions</a>
+        <a class="tab" routerLink="/admin/proposals" routerLinkActive="is-active">Proposals</a>
+      </div>
+    </div>
+
+    <div class="container container--narrow" style="padding: 16px 0 64px;">
       <nav class="breadcrumb" aria-label="Breadcrumb">
-        <a routerLink="/admin/actions">Admin / Actions</a>
+        <a routerLink="/admin/actions">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-2px; margin-right:4px;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Admin · Actions
+        </a>
         <span class="breadcrumb__sep">/</span>
-        <span>{{ isEdit() ? title : 'New action' }}</span>
+        <span class="current">{{ isEdit() ? title : 'New action' }}</span>
       </nav>
 
       <div class="form-head">
-        <h1>{{ isEdit() ? 'Edit action' : 'New action' }}</h1>
-        <p class="meta">
+        <div class="page-title-row"><h1 class="page-title has-dot">{{ isEdit() ? 'Edit action' : 'New action' }}</h1></div>
+        <p class="page-subtitle">
           {{ isEdit()
               ? 'Update what your colleagues see. Existing registrations are kept.'
               : 'The information your colleagues will see first.' }}
@@ -29,12 +39,16 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
       </div>
 
       @if (loadError()) {
-        <p class="ai-error" style="margin-top: 16px;">{{ loadError() }}</p>
+        <div class="banner banner--error" role="alert" style="margin-top: 20px;">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div class="banner__body">{{ loadError() }}</div>
+        </div>
       }
 
       <form (ngSubmit)="submit()" #f="ngForm">
-        <section class="form-card">
-          <h2>Basics</h2>
+
+        <section class="card form-card">
+          <h2 class="card-title">Basics</h2>
 
           <div class="field">
             <label class="field__label" for="title">Action title</label>
@@ -53,21 +67,29 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
               <textarea class="textarea" id="description" name="description" rows="7"
                         placeholder="What will participants do? Who do they meet? What should they bring?"
                         [(ngModel)]="description"></textarea>
-              <button type="button" class="ai-btn" [disabled]="aiBusy() || !title.trim()"
+              <button type="button" class="btn btn--ghost btn--sm ai-btn"
+                      [disabled]="aiBusy() || !title.trim()"
+                      [class.btn--loading]="aiBusy()"
                       (click)="generate()">
-                <i class="pi pi-sparkles"></i>
-                @if (aiBusy()) { Generating… } @else { Generate from title }
+                <svg class="sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L13.5 9 L20 10.5 L13.5 12 L12 19 L10.5 12 L4 10.5 L10.5 9 Z"/></svg>
+                Generate from title
               </button>
             </div>
 
             @if (aiError()) {
-              <p class="ai-error" role="alert">{{ aiError() }}</p>
+              <div class="banner banner--error" role="alert" style="margin-top: 10px;">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+                <div class="banner__body">{{ aiError() }}</div>
+              </div>
             }
 
             @if (aiPreview()) {
               <div class="ai-result" aria-live="polite">
                 <div class="ai-result__head">
-                  <span><i class="pi pi-sparkles"></i> Suggested · review before using</span>
+                  <span>
+                    <svg class="sparkle" viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;color:var(--accent);"><path d="M12 2 L13.5 9 L20 10.5 L13.5 12 L12 19 L10.5 12 L4 10.5 L10.5 9 Z"/></svg>
+                    Suggested · review before using
+                  </span>
                   <div class="ai-result__actions">
                     <button type="button" class="btn btn--ghost btn--sm" (click)="dismissAi()">Dismiss</button>
                     <button type="button" class="btn btn--secondary btn--sm" (click)="acceptAi()">Use this</button>
@@ -79,18 +101,16 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
           </div>
         </section>
 
-        <section class="form-card">
-          <h2>Cover image</h2>
-          <p class="section-subtitle" style="margin-bottom: 14px;">
-            Optional. Upload a photo or paste a URL — appears on action cards
-            and at the top of the detail page. Leave empty to keep the
-            default decorative thumbnail.
+        <section class="card form-card">
+          <h2 class="card-title">Cover image</h2>
+          <p class="muted" style="font-size: 0.875rem; margin-bottom: 14px;">
+            Optional. Upload a photo or paste a URL — appears on action cards and at the top of the detail page.
           </p>
           <app-image-picker [value]="imageUrl" (valueChange)="imageUrl = $event" />
         </section>
 
-        <section class="form-card">
-          <h2>When &amp; where</h2>
+        <section class="card form-card">
+          <h2 class="card-title">When &amp; where</h2>
 
           <div class="grid-2">
             <div class="field">
@@ -117,9 +137,7 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
             <div class="field__row">
               <label class="field__label">Pin on the map</label>
               @if (latitude !== null && longitude !== null) {
-                <button type="button" class="link-btn" (click)="clearCoords()">
-                  Clear pin
-                </button>
+                <button type="button" class="link-btn" (click)="clearCoords()">Clear pin</button>
               } @else {
                 <span class="field__hint">Click anywhere on the map to drop a pin</span>
               }
@@ -130,17 +148,16 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
               [height]="320"
               (picked)="onPicked($event)" />
             @if (latitude !== null && longitude !== null) {
-              <p class="field__hint" style="margin-top: 8px;">
-                <i class="pi pi-map-marker"></i>
-                {{ latitude!.toFixed(5) }}, {{ longitude!.toFixed(5) }} ·
-                drag the pin to fine-tune
+              <p class="field__hint" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                {{ latitude!.toFixed(5) }}, {{ longitude!.toFixed(5) }} · drag the pin to fine-tune
               </p>
             }
           </div>
         </section>
 
-        <section class="form-card">
-          <h2>Capacity &amp; cause</h2>
+        <section class="card form-card">
+          <h2 class="card-title">Capacity &amp; cause</h2>
 
           <div class="grid-2">
             <div class="field">
@@ -167,12 +184,10 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
           </div>
         </section>
 
-        <section class="form-card">
-          <h2>After the event</h2>
-          <p class="section-subtitle" style="margin-bottom: 14px;">
-            Optional. Add a short impact summary after the action — e.g.
-            "120 meals served" or "8 hours mentoring delivered". Used as
-            internal narrative, not a metric.
+        <section class="card form-card">
+          <h2 class="card-title">After the event</h2>
+          <p class="muted" style="font-size: 0.875rem; margin-bottom: 14px;">
+            Optional. Add a short impact summary after the action — e.g. "120 meals served" or "8 hours mentoring delivered".
           </p>
           <div class="field">
             <label class="field__label" for="impact">Impact summary</label>
@@ -183,105 +198,61 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
         </section>
 
         @if (submitError()) {
-          <p class="ai-error" role="alert" style="margin-top: 16px;">{{ submitError() }}</p>
+          <div class="banner banner--error" role="alert" style="margin-top: 20px;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div class="banner__body">{{ submitError() }}</div>
+          </div>
         }
 
         <div class="form-actions">
           <a class="btn btn--ghost" routerLink="/admin/actions">Cancel</a>
-          <button class="btn btn--primary" type="submit"
-                  [disabled]="submitting() || f.invalid">
-            @if (submitting()) { Saving… } @else { {{ isEdit() ? 'Save changes' : 'Create action' }} }
+          <button class="btn btn--yellow" type="submit"
+                  [disabled]="submitting() || f.invalid"
+                  [class.btn--loading]="submitting()">
+            {{ isEdit() ? 'Save changes' : 'Publish' }}
           </button>
         </div>
       </form>
     </div>
   `,
   styles: [`
-    :host { display: block; background: var(--surface); min-height: calc(100vh - var(--header-h)); }
-    .breadcrumb { font-size: 13px; color: var(--text-muted); padding: 0 0 16px; }
-    .breadcrumb a { color: var(--text-muted); text-decoration: none; }
-    .breadcrumb a:hover { color: var(--navy); }
-    .breadcrumb__sep { margin: 0 8px; color: var(--text-subtle); }
+    :host { display: block; background: var(--bg); min-height: calc(100vh - var(--header-h)); }
 
-    .form-head h1 {
-      font-size: 28px;
-      line-height: 1.2;
-      letter-spacing: -0.02em;
-      font-weight: 600;
-      color: var(--navy);
-      margin: 0 0 6px;
-    }
-    .form-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 24px 24px 28px;
-      margin-top: 20px;
-    }
-    .form-card h2 {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--navy);
-      margin: 0 0 16px;
-      letter-spacing: -0.01em;
-    }
+    .form-head { padding-top: 16px; }
+    .form-card { padding: 24px 24px 28px; margin-top: 20px; }
     .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
     }
     @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
 
     .textarea-wrap { position: relative; }
     .ai-btn {
       position: absolute;
-      right: 10px;
-      bottom: 10px;
-      height: 28px;
-      padding: 0 10px;
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-radius: var(--radius-sm);
-      font-size: 12.5px;
-      color: var(--navy);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      right: 10px; bottom: 10px;
+      background: var(--surface); border: 1px solid var(--line-2);
     }
-    .ai-btn:hover:not(:disabled) { border-color: var(--navy); background: var(--white); }
-    .ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .ai-btn i { font-size: 11px; }
-
-    .ai-error {
-      margin-top: 10px;
-      padding: 10px 12px;
-      background: #FBEDED;
-      color: #8B1F1F;
-      border-radius: var(--radius);
-      font-size: 13px;
-    }
+    .ai-btn:hover:not(:disabled) { border-color: var(--ink); background: var(--bg); }
 
     .ai-result {
       margin-top: 12px;
       padding: 14px 16px;
-      background: var(--yellow-soft);
-      border: 1px solid rgba(244, 228, 67, 0.6);
-      border-radius: var(--radius);
+      background: rgba(244, 228, 67, 0.12);
+      border: 1px solid rgba(244, 228, 67, 0.5);
+      border-radius: 12px;
     }
     .ai-result__head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
       gap: 12px;
-      font-size: 12.5px;
-      color: var(--navy);
-      margin-bottom: 10px;
-      font-weight: 500;
+      font-size: 0.8125rem; color: var(--ink);
+      margin-bottom: 10px; font-weight: 600;
     }
-    .ai-result__head i { font-size: 11px; }
+    .ai-result__head > span {
+      display: inline-flex; align-items: center; gap: 6px;
+    }
     .ai-result__actions { display: flex; gap: 6px; }
-    .ai-result p { margin: 0; font-size: 14px; color: var(--text); line-height: 1.5; }
+    .ai-result p {
+      margin: 0; font-size: 0.9375rem; color: var(--ink); line-height: 1.55;
+    }
 
     .form-actions {
       display: flex;
@@ -299,14 +270,9 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
       margin-bottom: 6px;
     }
     .link-btn {
-      appearance: none;
-      background: transparent;
-      border: 0;
-      color: var(--navy);
-      font-size: 12.5px;
-      font-weight: 500;
-      cursor: pointer;
-      padding: 0;
+      background: transparent; border: 0;
+      color: var(--ink); font-size: 0.8125rem; font-weight: 600;
+      cursor: pointer; padding: 0;
     }
     .link-btn:hover { text-decoration: underline; }
   `]
@@ -358,7 +324,6 @@ export class AdminActionFormComponent implements OnInit {
   private populate(a: CharityAction): void {
     this.title = a.title;
     this.description = a.description ?? '';
-    // ISO 2026-06-15T18:30:00 → date 2026-06-15, time 18:30
     const [d, t] = (a.actionDate ?? '').split('T');
     this.date = d ?? '';
     this.time = (t ?? '09:00:00').substring(0, 5);
@@ -371,7 +336,6 @@ export class AdminActionFormComponent implements OnInit {
     this.imageUrl = a.imageUrl ?? null;
   }
 
-  /** Feeds the map component's `initialPick` input. */
   initialPick(): { lat: number; lng: number } | null {
     return this.latitude !== null && this.longitude !== null
       ? { lat: this.latitude, lng: this.longitude }
@@ -379,8 +343,6 @@ export class AdminActionFormComponent implements OnInit {
   }
 
   onPicked(p: { lat: number; lng: number }): void {
-    // Round to 6 decimals to match the DB's DECIMAL(9,6) and avoid validator
-    // grumbles about extra precision.
     this.latitude = Math.round(p.lat * 1e6) / 1e6;
     this.longitude = Math.round(p.lng * 1e6) / 1e6;
   }

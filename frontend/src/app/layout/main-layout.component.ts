@@ -10,26 +10,26 @@ import { AiAssistantWidgetComponent } from '../shared/ai-assistant-widget.compon
   imports: [RouterOutlet, RouterLink, RouterLinkActive, AiAssistantWidgetComponent],
   template: `
     <header class="app-header">
-      <div class="app-header__inner">
-        <a class="brand" routerLink="/actions" aria-label="Inetum, Charity Day home">
-          <span class="brand__mark" aria-hidden="true"></span>
-          <span class="brand__word">Inetum</span>
-          <span class="muted brand__suffix">· Charity Day</span>
+      <div class="container">
+        <a class="brand" routerLink="/actions" aria-label="Inetum Charity Day home">
+          <span class="brand-wordmark">inetum</span>
+          <span class="brand-divider" aria-hidden="true"></span>
+          <span class="brand-app">Charity Day</span>
         </a>
-        <nav class="app-nav" aria-label="Primary">
-          <a routerLink="/actions" routerLinkActive="active">Actions</a>
-          <a routerLink="/propose" routerLinkActive="active">Propose an idea</a>
+        <nav class="nav-main" aria-label="Primary">
+          <a class="nav-link" routerLink="/actions" routerLinkActive="is-active">Actions</a>
+          <a class="nav-link" routerLink="/propose" routerLinkActive="is-active">Propose an idea</a>
           @if (isAdmin()) {
-            <a routerLink="/admin/actions" routerLinkActive="active">Admin</a>
+            <a class="nav-link" routerLink="/admin/actions" routerLinkActive="is-active">Admin</a>
           }
         </nav>
-        <div class="app-header__right">
-          <span class="user-chip" role="status">
+        <div class="header-right">
+          <span class="user-chip" role="status" [title]="email()">
             <span class="user-chip__avatar">{{ initials() }}</span>
-            <span>{{ email() }}</span>
+            <span class="user-chip__email">{{ email() }}</span>
           </span>
-          <button type="button" class="btn btn--secondary btn--sm" (click)="logout()">
-            <i class="pi pi-sign-out"></i> Sign out
+          <button type="button" class="btn-signout" (click)="logout()" aria-label="Sign out">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           </button>
         </div>
       </div>
@@ -38,19 +38,33 @@ import { AiAssistantWidgetComponent } from '../shared/ai-assistant-widget.compon
       <router-outlet />
     </main>
     <footer class="app-footer">
-      <div class="app-footer__inner">
-        <span>Inetum · Charity Day · 2026 edition</span>
-        <span>Internal use only</span>
+      <div class="container">
+        <span><span class="accent">inetum</span> · Charity Day · 2026 edition</span>
+        <span class="muted-on-dark">Internal use only</span>
       </div>
     </footer>
 
     <app-ai-assistant-widget />
   `,
   styles: [`
-    :host { display: flex; flex-direction: column; min-height: 100vh; background: var(--white); }
+    :host { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); }
     .content { flex: 1; }
-    .brand__suffix { font-size: 14px; font-weight: 400; }
-    .pi-sign-out { font-size: 12px; }
+    .user-chip__email {
+      max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    @media (max-width: 720px) {
+      .user-chip__email { display: none; }
+    }
+    .btn-signout {
+      width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.06);
+      color: #fff; display: inline-flex; align-items: center; justify-content: center;
+      border: 0; cursor: pointer;
+      transition: background var(--t-hover) var(--ease);
+    }
+    .btn-signout:hover { background: rgba(255,255,255,.14); }
+    .muted-on-dark { color: rgba(255,255,255,.55); }
+    .app-footer { color: rgba(255,255,255,.85); }
+    .app-footer .accent { color: var(--accent); font-weight: 700; letter-spacing: -0.02em; }
   `]
 })
 export class MainLayoutComponent {

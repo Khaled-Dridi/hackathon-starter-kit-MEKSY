@@ -20,35 +20,9 @@ interface ChatTurn {
   who: 'me' | 'assistant';
   text: string;
   at: Date;
-  /** Only set on assistant turns. Drives the action chips below the bubble. */
   related?: RelatedAction[];
 }
 
-/**
- * Floating AI assistant — a small navy circle anchored to the bottom-right
- * of every authenticated page. Clicking it pops up a Slack-style chat panel
- * that talks to the Charity Day assistant on the backend.
- *
- * <h3>Action chips</h3>
- * The backend may include a list of related actions with each assistant
- * reply (parsed from {@code [[action:N]]} markers the LLM emits). We
- * render each as a compact card with three buttons:
- * <ul>
- *   <li><b>Open</b> — closes the widget and routes to the action page.</li>
- *   <li><b>Register</b> — calls the register endpoint and re-fetches.</li>
- *   <li><b>Cancel registration</b> — same, in reverse.</li>
- * </ul>
- * The user always confirms by clicking — the AI never performs an
- * action autonomously.
- *
- * <h3>Lifecycle</h3>
- * <ul>
- *   <li>Singleton, mounted in {@code main-layout} so conversation persists
- *       across routes.</li>
- *   <li>Hidden on {@code /login} via router events.</li>
- *   <li>Memory keyed by a per-browser UUID, rotated by "Start new conversation".</li>
- * </ul>
- */
 @Component({
   selector: 'app-ai-assistant-widget',
   standalone: true,
@@ -56,69 +30,84 @@ interface ChatTurn {
   template: `
     @if (visible()) {
       @if (open()) {
-        <div class="aw-panel" role="dialog" aria-labelledby="aw-title">
-          <header class="aw-head">
-            <div class="aw-title-row">
-              <span class="aw-avatar"><i class="pi pi-sparkles"></i></span>
-              <div>
-                <h3 id="aw-title">Charity Day assistant</h3>
-                <p class="aw-sub">Ask me to help you pick an action</p>
+        <div class="ai-panel" role="dialog" aria-labelledby="aw-title">
+          <header class="ai-panel__head">
+            <span class="aw-sparkle" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L13.5 9 L20 10.5 L13.5 12 L12 19 L10.5 12 L4 10.5 L10.5 9 Z"/></svg>
+            </span>
+            <div style="flex:1; min-width:0;">
+              <div class="ai-panel__title" id="aw-title">Charity Day Assistant</div>
+              <div class="ai-panel__status">
+                <span class="dot"></span> Online · here to help
               </div>
             </div>
-            <button type="button" class="aw-close" (click)="toggle()" aria-label="Close assistant">
-              <i class="pi pi-times"></i>
+            <button type="button" class="modal__close" (click)="toggle()" aria-label="Close assistant">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </header>
 
-          <div #scroll class="aw-scroll" role="log" aria-live="polite">
+          <div #scroll class="ai-panel__body" role="log" aria-live="polite">
             @for (m of turns(); track $index) {
-              <div class="aw-msg" [class.aw-msg--mine]="m.who === 'me'">
+              <div class="ai-msg" [class.ai-msg--user]="m.who === 'me'">
                 @if (m.who === 'assistant') {
-                  <span class="aw-avatar aw-avatar--sm"><i class="pi pi-sparkles"></i></span>
+                  <span class="ai-msg__avatar aw-sparkle aw-sparkle--sm" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L13.5 9 L20 10.5 L13.5 12 L12 19 L10.5 12 L4 10.5 L10.5 9 Z"/></svg>
+                  </span>
                 }
-                <div class="aw-bubble-wrap">
-                  <div class="aw-bubble">
-                    <p>{{ m.text }}</p>
-                    <span class="aw-time">{{ m.at | date:'HH:mm' }}</span>
-                  </div>
+                <div style="display:flex; flex-direction:column; gap:8px; min-width:0; flex:1;">
+                  <div class="ai-msg__bubble">{{ m.text }}</div>
                   @if (m.who === 'assistant' && m.related && m.related.length > 0) {
-                    <div class="aw-chips">
+                    <div class="ai-chips">
                       @for (a of m.related; track a.id) {
-                        <div class="aw-chip" [class.aw-chip--closed]="a.isClosed">
-                          <div class="aw-chip__head">
-                            <span class="aw-chip__title">{{ a.title }}</span>
+                        <div class="ai-chip" [class.is-closed]="a.isClosed">
+                          <div class="ai-chip__head">
+                            <span class="ai-chip__title">{{ a.title }}</span>
                             @if (a.isClosed) {
-                              <span class="aw-pill aw-pill--off">Closed</span>
+                              <span class="pill pill--closed"><span class="dot"></span>Closed</span>
                             } @else if (a.seatsRemaining === 0) {
-                              <span class="aw-pill aw-pill--off">Full</span>
+                              <span class="pill pill--full"><span class="dot"></span>Full</span>
                             } @else if (a.currentUserRegistered) {
-                              <span class="aw-pill aw-pill--ok">Registered</span>
+                              <span class="pill pill--reg">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                Registered
+                              </span>
+                            } @else if (a.seatsRemaining <= 3) {
+                              <span class="pill pill--almost">{{ a.seatsRemaining }} left</span>
                             } @else {
-                              <span class="aw-pill aw-pill--neutral">{{ a.seatsRemaining }} left</span>
+                              <span class="pill pill--open"><span class="dot"></span>Open</span>
                             }
                           </div>
-                          <div class="aw-chip__meta">
-                            <span><i class="pi pi-calendar"></i> {{ a.actionDate | date:'EEE, MMM d · HH:mm' }}</span>
+                          <div class="ai-chip__meta">
+                            <span>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                              {{ a.actionDate | date:'EEE, MMM d · HH:mm' }}
+                            </span>
                             @if (a.location) {
-                              <span><i class="pi pi-map-marker"></i> {{ a.location }}</span>
+                              <span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                {{ a.location }}
+                              </span>
                             }
                           </div>
-                          <div class="aw-chip__actions">
-                            <button type="button" class="aw-cbtn aw-cbtn--ghost" (click)="openAction(a)">
-                              <i class="pi pi-external-link"></i> Open
+                          <div class="ai-chip__row">
+                            <button type="button" class="btn btn--secondary btn--sm" (click)="openAction(a)">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                              Open
                             </button>
                             @if (!a.isClosed) {
                               @if (a.currentUserRegistered) {
-                                <button type="button" class="aw-cbtn aw-cbtn--danger"
+                                <button type="button" class="btn btn--danger-ghost btn--sm"
                                         [disabled]="actionBusy() === a.id"
+                                        [class.btn--loading]="actionBusy() === a.id"
                                         (click)="cancel(a)">
-                                  @if (actionBusy() === a.id) { Working… } @else { Cancel }
+                                  Cancel
                                 </button>
                               } @else if (a.seatsRemaining > 0) {
-                                <button type="button" class="aw-cbtn aw-cbtn--primary"
+                                <button type="button" class="btn btn--yellow btn--sm"
                                         [disabled]="actionBusy() === a.id"
+                                        [class.btn--loading]="actionBusy() === a.id"
                                         (click)="register(a)">
-                                  @if (actionBusy() === a.id) { Working… } @else { Register }
+                                  Sign me up
                                 </button>
                               }
                             }
@@ -131,50 +120,53 @@ interface ChatTurn {
               </div>
             }
             @if (waiting()) {
-              <div class="aw-msg">
-                <span class="aw-avatar aw-avatar--sm"><i class="pi pi-sparkles"></i></span>
-                <div class="aw-bubble">
-                  <span class="aw-typing">
-                    <span></span><span></span><span></span>
-                  </span>
+              <div class="ai-msg">
+                <span class="ai-msg__avatar aw-sparkle aw-sparkle--sm" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L13.5 9 L20 10.5 L13.5 12 L12 19 L10.5 12 L4 10.5 L10.5 9 Z"/></svg>
+                </span>
+                <div class="ai-msg__bubble">
+                  <span class="ai-typing"><span></span><span></span><span></span></span>
                 </div>
               </div>
             }
             @if (errorMsg()) {
-              <p class="aw-err">{{ errorMsg() }}</p>
+              <div class="banner banner--error" style="font-size: 0.8125rem;">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div class="banner__body">{{ errorMsg() }}</div>
+              </div>
             }
           </div>
 
-          <form class="aw-composer" (ngSubmit)="send()">
-            <input type="text" class="aw-input" name="draft"
-                   [(ngModel)]="draft"
-                   placeholder="Ask me anything about the actions…"
-                   autocomplete="off"
-                   [disabled]="waiting()" />
-            <button class="aw-send" type="submit"
-                    [disabled]="!draft.trim() || waiting()"
-                    aria-label="Send">
-              <i class="pi pi-send"></i>
-            </button>
-          </form>
-
-          @if (turns().length > 1) {
-            <button type="button" class="aw-reset" (click)="reset()">
-              Start a new conversation
-            </button>
-          }
+          <div class="ai-panel__footer">
+            <form class="ai-input-row" (ngSubmit)="send()">
+              <input type="text" name="draft"
+                     [(ngModel)]="draft"
+                     placeholder="Ask me anything about the actions…"
+                     autocomplete="off"
+                     [disabled]="waiting()" />
+              <button class="send" type="submit"
+                      [disabled]="!draft.trim() || waiting()"
+                      aria-label="Send">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </form>
+            @if (turns().length > 1) {
+              <button type="button" class="aw-reset" (click)="reset()">
+                Start a new conversation
+              </button>
+            }
+          </div>
         </div>
       }
 
-      <button type="button" class="aw-bubble-btn"
-              [class.aw-bubble-btn--open]="open()"
+      <button type="button" class="ai-bubble"
               (click)="toggle()"
               [attr.aria-label]="open() ? 'Close assistant' : 'Open assistant'"
               title="Charity Day assistant">
         @if (open()) {
-          <i class="pi pi-times"></i>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;color:#fff;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         } @else {
-          <i class="pi pi-sparkles"></i>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L13.5 9 L20 10.5 L13.5 12 L12 19 L10.5 12 L4 10.5 L10.5 9 Z"/></svg>
         }
       </button>
     }
@@ -182,296 +174,58 @@ interface ChatTurn {
   styles: [`
     :host { display: contents; }
 
-    /* Floating bubble button */
-    .aw-bubble-btn {
-      position: fixed;
-      right: 22px;
-      bottom: 22px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      border: 0;
-      background: var(--navy);
-      color: white;
-      cursor: pointer;
-      box-shadow: 0 8px 24px rgba(22, 31, 58, 0.32);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1100;
-      transition: background 0.15s, transform 0.15s;
-    }
-    .aw-bubble-btn:hover { background: var(--navy-hover); transform: translateY(-1px); }
-    .aw-bubble-btn i { font-size: 20px; }
-    .aw-bubble-btn--open i { font-size: 14px; }
-
-    /* Panel */
-    .aw-panel {
-      position: fixed;
-      right: 22px;
-      bottom: 92px;
-      width: 400px;
-      max-width: calc(100vw - 32px);
-      height: 600px;
-      max-height: calc(100vh - 130px);
-      background: var(--white);
-      border-radius: var(--radius-lg);
-      box-shadow: 0 24px 64px rgba(22, 31, 58, 0.28);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      z-index: 1099;
-      border: 1px solid var(--border);
-    }
-
-    .aw-head {
-      padding: 14px 16px;
-      background: var(--navy);
-      color: var(--white);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .aw-title-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
-    .aw-head h3 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
-    .aw-sub { margin: 0; font-size: 11.5px; color: rgba(255, 255, 255, 0.65); }
-    .aw-close {
-      appearance: none;
-      background: transparent;
-      border: 0;
-      color: rgba(255,255,255,0.75);
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      cursor: pointer;
-    }
-    .aw-close:hover { background: rgba(255,255,255,0.1); color: white; }
-    .aw-close i { font-size: 12px; }
-
-    /* Avatar — yellow sparkles bubble */
-    .aw-avatar {
+    /* Yellow sparkle avatar */
+    .aw-sparkle {
       width: 28px; height: 28px;
       border-radius: 50%;
-      background: var(--yellow);
-      color: var(--navy-deep);
+      background: linear-gradient(135deg, #FCEC5C 0%, #E4D32A 100%);
+      color: var(--accent-ink);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(244,228,67,0.4);
     }
-    .aw-avatar i { font-size: 13px; }
-    .aw-avatar--sm { width: 24px; height: 24px; }
-    .aw-avatar--sm i { font-size: 11px; }
+    .aw-sparkle svg { width: 14px; height: 14px; }
+    .aw-sparkle--sm { width: 26px; height: 26px; }
 
-    /* Messages */
-    .aw-scroll {
-      flex: 1;
-      padding: 14px;
-      overflow-y: auto;
-      background: var(--surface);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .aw-msg {
-      display: flex;
-      gap: 8px;
-      align-items: flex-end;
-      max-width: 88%;
-      align-self: flex-start;
-    }
-    .aw-msg--mine { align-self: flex-end; flex-direction: row-reverse; }
-    .aw-bubble-wrap { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-    .aw-bubble {
-      background: var(--white);
-      border-radius: 14px;
-      padding: 8px 12px 6px;
-      box-shadow: 0 1px 2px rgba(32,44,80,0.06);
-      min-width: 50px;
-    }
-    .aw-msg--mine .aw-bubble {
-      background: var(--yellow-soft);
-      border: 1px solid rgba(244, 228, 67, 0.6);
-    }
-    .aw-bubble p {
-      margin: 0;
-      font-size: 13.5px;
-      line-height: 1.45;
-      color: var(--text);
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    .aw-time {
-      display: block;
-      font-size: 10.5px;
-      color: var(--text-subtle);
-      margin-top: 3px;
-      text-align: right;
-    }
+    /* Position the panel above the bubble */
+    .ai-panel { bottom: 92px; }
 
-    /* Action chips */
-    .aw-chips { display: flex; flex-direction: column; gap: 6px; }
-    .aw-chip {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .aw-chip--closed { opacity: 0.65; }
-    .aw-chip__head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .aw-chip__title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--navy);
+    .ai-chip__title {
+      font-weight: 600; font-size: 0.9375rem;
+      flex: 1; min-width: 0;
       line-height: 1.3;
     }
-    .aw-pill {
-      font-size: 10.5px;
-      font-weight: 500;
-      padding: 2px 7px;
-      border-radius: 999px;
-      flex-shrink: 0;
-      white-space: nowrap;
+    .ai-chip__head {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
     }
-    .aw-pill--ok      { background: #E8F4ED; color: #1B7F4F; }
-    .aw-pill--off     { background: #EEF0F5; color: #6B7592; }
-    .aw-pill--neutral { background: var(--yellow); color: var(--navy-deep); }
+    .ai-chip__meta {
+      display: flex; flex-direction: column; gap: 4px;
+      font-size: 0.8125rem; color: var(--muted);
+    }
+    .ai-chip__meta span { display: inline-flex; align-items: center; gap: 6px; }
 
-    .aw-chip__meta {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-    .aw-chip__meta span { display: inline-flex; align-items: center; gap: 5px; }
-    .aw-chip__meta i { font-size: 10px; color: var(--text-subtle); }
-
-    .aw-chip__actions { display: flex; gap: 6px; margin-top: 4px; }
-    .aw-cbtn {
-      appearance: none;
-      border: 1px solid transparent;
-      border-radius: 999px;
-      padding: 5px 11px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .aw-cbtn i { font-size: 10px; }
-    .aw-cbtn:disabled { opacity: 0.55; cursor: progress; }
-    .aw-cbtn--ghost {
-      background: var(--surface);
-      color: var(--navy);
-      border-color: var(--border);
-    }
-    .aw-cbtn--ghost:hover:not(:disabled) { background: var(--surface-2); }
-    .aw-cbtn--primary {
-      background: var(--navy);
-      color: white;
-      border-color: var(--navy);
-    }
-    .aw-cbtn--primary:hover:not(:disabled) { background: var(--navy-hover); }
-    .aw-cbtn--danger {
-      background: var(--white);
-      color: #8B1F1F;
-      border-color: #DBA5A5;
-    }
-    .aw-cbtn--danger:hover:not(:disabled) { background: #FBEDED; }
-
-    /* Typing indicator */
-    .aw-typing { display: inline-flex; gap: 4px; padding: 4px 0; }
-    .aw-typing span {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--text-subtle);
-      animation: awTyping 1s infinite ease-in-out;
-    }
-    .aw-typing span:nth-child(2) { animation-delay: 0.15s; }
-    .aw-typing span:nth-child(3) { animation-delay: 0.3s; }
-    @keyframes awTyping {
-      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-      30% { transform: translateY(-3px); opacity: 1; }
-    }
-
-    .aw-err {
-      margin: 6px 0 0;
-      padding: 6px 10px;
-      background: #FBEDED;
-      color: #8B1F1F;
-      border-radius: var(--radius-sm);
-      font-size: 12px;
-    }
-
-    /* Composer */
-    .aw-composer {
-      padding: 10px 12px;
-      border-top: 1px solid var(--border);
-      background: var(--white);
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .aw-input {
-      flex: 1;
-      height: 36px;
-      padding: 0 12px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: var(--surface);
-      font: 13px 'Inter', system-ui, sans-serif;
-      color: var(--text);
-    }
-    .aw-input:focus {
-      outline: 0;
-      background: var(--white);
-      border-color: var(--navy);
-    }
-    .aw-input:disabled { cursor: progress; }
-    .aw-send {
-      appearance: none;
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      border: 0;
-      background: var(--navy);
-      color: white;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .aw-send:hover:not(:disabled) { background: var(--navy-hover); }
-    .aw-send:disabled { opacity: 0.4; cursor: not-allowed; }
-    .aw-send i { font-size: 12px; margin-left: 1px; }
+    .ai-chip.is-closed { opacity: 0.65; }
 
     .aw-reset {
-      appearance: none;
       background: transparent;
       border: 0;
-      border-top: 1px solid var(--border);
-      padding: 8px 12px;
-      color: var(--text-muted);
-      font-size: 12px;
+      padding: 4px 8px;
+      color: var(--muted);
+      font-size: 0.75rem;
       cursor: pointer;
+      align-self: center;
+      transition: color var(--t-hover) var(--ease);
     }
-    .aw-reset:hover { color: var(--navy); background: var(--surface); }
+    .aw-reset:hover { color: var(--ink); text-decoration: underline; }
 
     @media (max-width: 480px) {
-      .aw-panel {
-        right: 12px; left: 12px; bottom: 82px;
+      .ai-panel {
+        right: 12px; left: 12px; bottom: 88px;
         width: auto; height: 75vh;
       }
+      .ai-bubble { right: 16px; bottom: 16px; }
     }
   `]
 })
@@ -487,7 +241,7 @@ export class AiAssistantWidgetComponent implements AfterViewChecked {
   readonly turns = signal<ChatTurn[]>([
     {
       who: 'assistant',
-      text: "Hi! I'm here to help you find a Charity Day action that fits you. " +
+      text: "Hi! I'm here to help you find a Charity Day action that fits. " +
             "Tell me what kind of cause, location, or schedule works for you — " +
             "or ask me to compare any two actions.",
       at: new Date(),
@@ -495,7 +249,6 @@ export class AiAssistantWidgetComponent implements AfterViewChecked {
   ]);
   readonly waiting = signal(false);
   readonly errorMsg = signal<string | null>(null);
-  /** Action id currently being registered/cancelled, so its button shows "Working…". */
   readonly actionBusy = signal<number | null>(null);
 
   private sessionId = crypto.randomUUID();
@@ -557,7 +310,6 @@ export class AiAssistantWidgetComponent implements AfterViewChecked {
     });
   }
 
-  /** Open the action's detail page (closes the widget so the page is visible). */
   openAction(a: RelatedAction): void {
     this.open.set(false);
     this.router.navigate(['/actions', a.id]);
@@ -593,7 +345,6 @@ export class AiAssistantWidgetComponent implements AfterViewChecked {
     });
   }
 
-  /** Update every chip referencing this action across the whole transcript. */
   private markRegistered(actionId: number, registered: boolean): void {
     this.turns.update((turns) =>
       turns.map((t) => {
@@ -621,7 +372,7 @@ export class AiAssistantWidgetComponent implements AfterViewChecked {
       action_closed: 'Registrations are closed for this action.',
       already_registered: 'You are already registered for this action.',
       already_registered_this_year:
-        "You're already registered for another action this year. Cancel it first if you want to switch.",
+        "You're already registered for another action this year. Cancel it first to switch.",
       not_registered: 'You are not registered for this action.',
     };
     return code ? map[code] ?? err?.error?.message ?? null : null;

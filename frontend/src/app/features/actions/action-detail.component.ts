@@ -23,7 +23,7 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
             <span class="skeleton" style="height:36px; width:60%; margin:14px 0;"></span>
             <span class="skeleton skeleton--line"></span>
             <span class="skeleton skeleton--line"></span>
-            <span class="skeleton" style="aspect-ratio:16/7; width:100%; margin:24px 0 32px; border-radius:12px;"></span>
+            <span class="skeleton" style="aspect-ratio:16/7; width:100%; margin:24px 0 32px; border-radius:16px;"></span>
             <span class="skeleton skeleton--line"></span>
             <span class="skeleton skeleton--line"></span>
             <span class="skeleton skeleton--line is-short"></span>
@@ -32,8 +32,8 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
             <div class="registration">
               <span class="skeleton skeleton--line is-short"></span>
               <span class="skeleton" style="height:32px; width:50%; margin:12px 0;"></span>
-              <span class="skeleton" style="height:4px; width:100%; margin:8px 0 16px;"></span>
-              <span class="skeleton" style="height:44px; width:100%; border-radius:8px;"></span>
+              <span class="skeleton" style="height:6px; width:100%; margin:8px 0 16px;"></span>
+              <span class="skeleton" style="height:44px; width:100%; border-radius:12px;"></span>
             </div>
           </aside>
         </div>
@@ -42,13 +42,16 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
       <div class="container">
         <nav class="breadcrumb" aria-label="Breadcrumb">
           <div class="breadcrumb__crumbs">
-            <a routerLink="/actions">Actions</a>
+            <a routerLink="/actions">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-2px; margin-right:4px;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              Actions
+            </a>
             <span class="breadcrumb__sep">/</span>
-            <span>{{ a.title }}</span>
+            <span class="current">{{ a.title }}</span>
           </div>
-          <button type="button" class="qr-trigger" (click)="qrOpen.set(true)"
-                  title="Share with a QR code">
-            <i class="pi pi-qrcode"></i> Share with QR
+          <button type="button" class="btn btn--secondary btn--sm" (click)="qrOpen.set(true)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="18" y1="14" x2="18" y2="18"/><line x1="14" y1="18" x2="21" y2="18"/><line x1="18" y1="21" x2="21" y2="21"/></svg>
+            Share with QR
           </button>
         </nav>
 
@@ -56,32 +59,47 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
           <div>
             <header class="detail__head">
               @if (a.oddTag) {
-                <div class="detail__chips">
-                  <span class="chip"><span class="chip__dot" style="background:#4C9F38"></span>{{ a.oddTag }}</span>
-                </div>
+                <span class="sdg-tag">
+                  <span class="sdg-num">{{ a.oddTag }}</span>
+                </span>
               }
-              <h1>{{ a.title }}</h1>
+              <h1 class="detail__title">{{ a.title }}</h1>
               @if (a.description) {
                 <p class="detail__lede">{{ firstSentence(a.description) }}</p>
               }
+              <div class="detail__meta">
+                <span class="row">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  {{ a.actionDate | date:'EEEE, MMMM d' }} · {{ a.actionDate | date:'HH:mm' }}
+                </span>
+                @if (a.location) {
+                  <span class="row">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    {{ a.location }}
+                  </span>
+                }
+              </div>
             </header>
 
             @if (a.imageUrl) {
               <img class="detail__cover detail__cover--image" [src]="a.imageUrl"
                    [alt]="'Cover image for ' + a.title" />
             } @else {
-              <div class="detail__cover" role="img" [attr.aria-label]="'Visual for ' + a.title"></div>
+              <div class="detail__cover cover-gradient--b" role="img" [attr.aria-label]="'Visual for ' + a.title">
+                <span class="cover-tile"></span>
+                <span class="cover-decor"></span>
+              </div>
             }
 
             <section class="prose">
               @if (a.description) {
-                <h2>About this action</h2>
+                <h2 class="section-title">About this action</h2>
                 @for (p of paragraphs(a.description); track $index) {
                   <p>{{ p }}</p>
                 }
               }
 
-              <h2>Where & when</h2>
+              <h2 class="section-title">Where & when</h2>
               <dl class="dl">
                 <div>
                   <dt>Date</dt>
@@ -112,7 +130,7 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
               }
 
               @if (a.impactSummary) {
-                <h2>Reported impact</h2>
+                <h2 class="section-title">Reported impact</h2>
                 <p>{{ a.impactSummary }}</p>
               }
             </section>
@@ -131,70 +149,76 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
           </div>
 
           <aside class="aside" aria-label="Registration">
-            <div class="registration">
+            <div class="registration card">
               <div class="registration__head">
                 <span class="label">Registration</span>
                 @if (a.isClosed) {
-                  <span class="pill pill--full">Closed</span>
+                  <span class="pill pill--closed"><span class="dot"></span>Closed</span>
                 } @else if (a.seatsRemaining === 0) {
-                  <span class="pill pill--full">Full</span>
+                  <span class="pill pill--full"><span class="dot"></span>Full</span>
                 } @else if (a.seatsRemaining <= 3) {
-                  <span class="pill pill--soon">{{ a.seatsRemaining }} seats left</span>
+                  <span class="pill pill--almost">{{ a.seatsRemaining }} seats left</span>
                 } @else {
-                  <span class="pill pill--open pill--dot">Open</span>
+                  <span class="pill pill--open"><span class="dot"></span>Open</span>
                 }
               </div>
-              <div class="registration__price">
-                {{ a.registeredCount }}
-                <span class="muted" style="font-weight:400; font-size:16px;">/ {{ a.capacity }} registered</span>
-              </div>
-              <div class="registration__progress">
-                <span [style.width.%]="fillPercent(a)"></span>
-              </div>
-              <div class="registration__seats">
-                <span>{{ a.actionDate | date:'MMM d' }}</span>
-                <span>{{ fillPercent(a) }}%</span>
+
+              <div class="registration__seats-block">
+                <div class="registration__count">
+                  <strong>{{ a.registeredCount }}</strong>
+                  <span class="muted">of {{ a.capacity }} seats filled</span>
+                </div>
+                @if (!a.isClosed && a.seatsRemaining > 0) {
+                  <div class="registration__left">{{ a.seatsRemaining }} left</div>
+                }
+                <div class="progress" [class.progress--urgent]="isUrgent(a)" style="margin-top: 10px;">
+                  <div class="progress__bar" [style.width.%]="fillPercent(a)"></div>
+                </div>
               </div>
 
               @if (a.currentUserRegistered) {
                 <button class="btn btn--secondary btn--lg btn--block" type="button"
-                        [disabled]="busy()" (click)="unregister(a.id)">
-                  @if (busy()) { Working… } @else { Cancel my registration }
-                </button>
-                <p class="registration__meta" style="color: #1B7F4F;">
-                  <i class="pi pi-check-circle"></i> You're registered for this action.
-                </p>
-              } @else {
-                <button class="btn btn--primary btn--lg btn--block" type="button"
-                        [disabled]="busy() || a.isClosed || a.seatsRemaining === 0"
-                        (click)="register(a.id)">
-                  @if (busy()) { Working… } @else { Register for this action }
+                        [disabled]="busy()" [class.btn--loading]="busy()"
+                        (click)="unregister(a.id)">
+                  Cancel my spot
                 </button>
                 <p class="registration__meta">
-                  You can cancel any time before the action's date.
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1E9D6B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><polyline points="20 6 9 17 4 12"/></svg>
+                  You're in. We'll send the practical details by email.
+                </p>
+              } @else {
+                <button class="btn btn--yellow btn--lg btn--block" type="button"
+                        [disabled]="busy() || a.isClosed || a.seatsRemaining === 0"
+                        [class.btn--loading]="busy()"
+                        (click)="register(a.id)">
+                  Sign me up
+                </button>
+                <p class="registration__meta">
+                  You'll get all the practical details by email after joining.
                 </p>
               }
 
               @if (errorMsg()) {
-                <p class="registration__error" role="alert">{{ errorMsg() }}</p>
+                <div class="banner banner--error" role="alert" style="margin-top: 12px;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <div class="banner__body">{{ errorMsg() }}</div>
+                </div>
               }
             </div>
 
             @if (isAdmin() && registrants(); as rs) {
-              <div class="registrants-card">
-                <div class="row--between" style="margin-bottom: 10px;">
-                  <h3 style="margin:0;">Registrants</h3>
+              <div class="registrants-card card">
+                <div class="row--between" style="margin-bottom: 12px;">
+                  <h3 class="card-title">Registrants</h3>
                   <span class="meta">{{ rs.length }} / {{ a.capacity }}</span>
                 </div>
                 <div class="registrants">
                   @for (r of rs; track r.userId) {
-                    <div class="row--between">
-                      <span class="row">
-                        <span class="user-chip__avatar" style="background:var(--navy)">{{ initials(r.email) }}</span>
-                        <span class="stack-2">
-                          <span class="meta-name">{{ r.email }}</span>
-                          <span class="meta-team">Registered {{ r.registeredAt | date:'MMM d, HH:mm' }}</span>
-                        </span>
+                    <div class="row">
+                      <span class="avatar avatar--sm" [class]="avatarColor(r.email)">{{ initials(r.email) }}</span>
+                      <span class="stack-2" style="flex:1; min-width:0;">
+                        <span class="meta-name">{{ r.email }}</span>
+                        <span class="meta-team muted">Registered {{ r.registeredAt | date:'MMM d, HH:mm' }}</span>
                       </span>
                     </div>
                   } @empty {
@@ -214,96 +238,76 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
     }
   `,
   styles: [`
-    .breadcrumb {
-      padding: 16px 0 0;
-      font-size: 13px;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+    .breadcrumb__crumbs {
+      display: flex; align-items: center; gap: 8px;
+      min-width: 0; overflow: hidden;
     }
-    .breadcrumb__crumbs { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .breadcrumb a { color: var(--text-muted); text-decoration: none; }
-    .breadcrumb a:hover { color: var(--navy); }
-    .breadcrumb__sep { margin: 0 8px; color: var(--text-subtle); }
-    .qr-trigger {
-      appearance: none;
-      background: var(--white);
-      border: 1px solid var(--border-strong);
-      border-radius: 999px;
-      padding: 5px 12px;
-      font-size: 12.5px;
-      font-weight: 500;
-      color: var(--navy);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
+    .breadcrumb__crumbs .current {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      max-width: 60ch;
     }
-    .qr-trigger:hover { background: var(--surface); border-color: var(--navy); }
-    .qr-trigger i { font-size: 12px; }
+    .breadcrumb__sep { color: var(--muted-2); }
 
     .detail {
       display: grid;
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: 1fr 360px;
       gap: 48px;
-      padding: 32px 0 56px;
+      padding: 24px 0 56px;
       align-items: start;
     }
     @media (max-width: 980px) { .detail { grid-template-columns: 1fr; } }
 
-    .detail__head { margin-bottom: 28px; }
-    .detail__chips { display: flex; gap: 8px; margin-bottom: 14px; }
-    .detail h1 {
-      font-size: 36px;
+    .detail__head { margin-bottom: 24px; display: flex; flex-direction: column; gap: 14px; }
+    .detail__head .sdg-tag { align-self: flex-start; }
+    .detail__title {
+      font-size: 2.25rem;
       line-height: 1.15;
       letter-spacing: -0.02em;
-      font-weight: 600;
-      color: var(--navy);
-      margin: 0 0 14px;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 0;
       max-width: 22ch;
     }
     .detail__lede {
-      font-size: 16px;
-      color: var(--text-muted);
-      max-width: 56ch;
+      font-size: 1.0625rem;
+      color: var(--muted);
+      max-width: 60ch;
       margin: 0;
+      line-height: 1.55;
     }
+    .detail__meta {
+      display: flex; flex-direction: column; gap: 8px;
+      color: var(--muted); font-size: 0.9375rem;
+    }
+    .detail__meta .row { gap: 8px; }
+
     .detail__cover {
       aspect-ratio: 16 / 7;
       width: 100%;
-      background:
-        linear-gradient(135deg, rgba(32,44,80,0.15) 0%, rgba(32,44,80,0.05) 100%),
-        linear-gradient(135deg, #DDE2F0 0%, #C5CCDF 100%);
-      border-radius: var(--radius-lg);
-      margin: 24px 0 32px;
+      border-radius: var(--r-card);
+      margin: 8px 0 32px;
+      position: relative;
+      overflow: hidden;
     }
     .detail__cover--image {
       object-fit: cover;
       display: block;
       background: var(--surface-2);
     }
-    .detail h2 {
-      font-size: 20px;
-      letter-spacing: -0.01em;
-      font-weight: 600;
-      color: var(--navy);
-      margin: 32px 0 12px;
-    }
+
+    .section-title { margin: 32px 0 12px; }
+    .section-title:first-child { margin-top: 0; }
     .prose p {
       margin: 0 0 14px;
-      font-size: 15px;
+      font-size: 1rem;
       line-height: 1.65;
-      color: var(--text);
+      color: var(--ink);
       max-width: 64ch;
     }
 
     .detail__map {
-      margin-top: 14px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
+      margin-top: 16px;
+      border-radius: var(--r-card);
       overflow: hidden;
     }
 
@@ -314,81 +318,46 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
       flex-direction: column;
       gap: 16px;
     }
-    .registration {
-      padding: 20px 22px 22px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      background: var(--white);
-    }
+    .registration { padding: 20px 22px 22px; }
     .registration__head {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px;
     }
-    .registration__price {
-      font-size: 22px;
-      font-weight: 600;
-      color: var(--navy);
-      letter-spacing: -0.01em;
+    .registration__seats-block { margin-bottom: 20px; }
+    .registration__count strong {
+      font-size: 1.5rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em;
     }
-    .registration__progress {
-      height: 4px;
-      background: var(--surface-2);
-      border-radius: 2px;
-      overflow: hidden;
-      margin: 6px 0 8px;
+    .registration__count .muted {
+      font-size: 0.9375rem; font-weight: 400; margin-left: 6px;
     }
-    .registration__progress > span {
-      display: block;
-      height: 100%;
-      background: var(--navy);
-    }
-    .registration__seats {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12.5px;
-      color: var(--text-muted);
-      margin-bottom: 16px;
+    .registration__left {
+      font-size: 0.8125rem; color: var(--muted); margin-top: 4px;
     }
     .registration__meta {
-      font-size: 13px;
-      color: var(--text-muted);
+      font-size: 0.8125rem;
+      color: var(--muted);
       text-align: center;
       margin-top: 12px;
-    }
-    .registration__error {
-      margin-top: 12px;
-      padding: 10px 12px;
-      background: #FBEDED;
-      color: #8B1F1F;
-      border-radius: var(--radius);
-      font-size: 13px;
+      line-height: 1.45;
     }
 
-    .registrants-card {
-      padding: 20px 22px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
+    .registrants-card { padding: 20px 22px; }
+    .registrants {
+      display: flex; flex-direction: column; gap: 10px;
+      max-height: 320px; overflow-y: auto;
     }
-    .registrants-card h3 {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--navy);
-      margin: 0 0 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+    .registrants .row { gap: 10px; }
+    .meta-name {
+      color: var(--ink); font-size: 0.9375rem; font-weight: 500;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .registrants { display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; }
-    .registrants .row--between { padding: 6px 0; }
-    .meta-name { color: var(--text); }
-    .meta-team { color: var(--text-muted); font-size: 12.5px; }
+    .meta-team { font-size: 0.8125rem; }
     .admin-only-note {
-      font-size: 11.5px;
+      font-size: 0.6875rem;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--text-subtle);
-      margin: 8px 0 0;
+      color: var(--muted-2);
+      margin: 12px 0 0;
     }
   `]
 })
@@ -398,16 +367,13 @@ export class ActionDetailComponent implements OnInit, OnDestroy {
   private auth = inject(AuthService);
   private events = inject(EventsService);
 
-  /** SSE unsubscribe handles. */
   private offEvents: Array<() => void> = [];
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
-  /** The action id this page is bound to — set in ngOnInit. */
   private actionId = 0;
 
   readonly loading = signal(true);
   readonly action = signal<CharityAction | null>(null);
   readonly registrants = signal<Registrant[] | null>(null);
-  /** Controls the QR-modal overlay. */
   readonly qrOpen = signal(false);
   readonly busy = signal(false);
   readonly errorMsg = signal<string | null>(null);
@@ -418,9 +384,7 @@ export class ActionDetailComponent implements OnInit, OnDestroy {
     this.actionId = Number(this.route.snapshot.paramMap.get('id'));
     this.loadAction(this.actionId);
 
-    // Real-time: only react to events scoped to this action (or to action.deleted/updated for it).
-    const relevant = (ev: { actionId: number | null }) =>
-      ev.actionId === this.actionId;
+    const relevant = (ev: { actionId: number | null }) => ev.actionId === this.actionId;
 
     this.offEvents.push(
       this.events.on('action.', (ev) => { if (relevant(ev)) this.scheduleRefresh(); }),
@@ -485,7 +449,7 @@ export class ActionDetailComponent implements OnInit, OnDestroy {
       action_closed: 'Registrations are closed for this action.',
       already_registered: 'You are already registered for this action.',
       already_registered_this_year:
-        'You already have a registration for this year. Cancel it first if you want to switch.',
+        "You've already joined one action this year — that's your slot used up. Free it by cancelling that one.",
       not_registered: 'You are not registered for this action.'
     };
     this.errorMsg.set(map[code] ?? err?.error?.message ?? 'Something went wrong.');
@@ -496,11 +460,21 @@ export class ActionDetailComponent implements OnInit, OnDestroy {
     return Math.min(100, Math.round((a.registeredCount / a.capacity) * 100));
   }
 
+  isUrgent(a: CharityAction): boolean {
+    return this.fillPercent(a) >= 75 && !a.isClosed;
+  }
+
   initials(email: string): string {
     const local = email.split('@')[0];
     const parts = local.split(/[._-]/).filter(Boolean);
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return local.slice(0, 2).toUpperCase();
+  }
+
+  avatarColor(email: string): string {
+    const hash = Array.from(email).reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+    const i = Math.abs(hash) % 6 + 1;
+    return `avatar--c${i}`;
   }
 
   firstSentence(text: string): string {

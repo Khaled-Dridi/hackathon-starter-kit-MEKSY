@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { ActionsService, CharityAction } from '../../core/actions.service';
 import { ProposalsService } from '../../core/proposals.service';
@@ -10,47 +10,56 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
 @Component({
   selector: 'app-admin-actions',
   standalone: true,
-  imports: [DatePipe, RouterLink, QrModalComponent],
+  imports: [DatePipe, RouterLink, RouterLinkActive, QrModalComponent],
   template: `
+    <!-- Admin sub-nav -->
+    <div class="subnav">
+      <div class="container">
+        <a class="tab" routerLink="/admin/actions" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: false }">Actions</a>
+        <a class="tab" routerLink="/admin/proposals" routerLinkActive="is-active">
+          Proposals
+          @if (pendingProposals() > 0) {
+            <span class="badge">{{ pendingProposals() }}</span>
+          }
+        </a>
+      </div>
+    </div>
+
     <div class="container" style="padding: 32px 0 64px;">
       <div class="admin-head">
         <div>
-          <h1>Actions</h1>
-          <p class="meta">Manage all volunteer actions for the 2026 edition.</p>
+          <div class="page-title-row"><h1 class="page-title has-dot">Actions</h1></div>
+          <p class="page-subtitle">Manage all volunteer actions for the 2026 edition.</p>
         </div>
-        <div class="row">
-          <a class="btn btn--secondary" routerLink="/admin/proposals">
-            <i class="pi pi-inbox" style="font-size:12px;"></i> Ideas inbox
-            @if (pendingProposals() > 0) {
-              <span class="badge-count">{{ pendingProposals() }}</span>
-            }
-          </a>
-          <a class="btn btn--primary" routerLink="/admin/actions/new">
-            <i class="pi pi-plus" style="font-size:12px;"></i> New action
+        <div class="row" style="gap: 10px;">
+          <a class="btn btn--yellow" routerLink="/admin/actions/new">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New action
           </a>
         </div>
       </div>
 
-      <div class="stats">
-        <div class="stat">
-          <div class="stat__label">Open actions</div>
-          <div class="stat__value">{{ openCount() }}</div>
-          <div class="stat__sub">{{ closedCount() }} closed</div>
+      <!-- KPI row -->
+      <div class="kpi-grid">
+        <div class="card kpi">
+          <div class="kpi__label">Open actions</div>
+          <div class="kpi__num">{{ openCount() }}</div>
+          <div class="muted" style="font-size: 0.8125rem;">{{ closedCount() }} closed</div>
         </div>
-        <div class="stat">
-          <div class="stat__label">Total registrations</div>
-          <div class="stat__value">{{ totalReg() }}</div>
-          <div class="stat__sub">across {{ actions().length }} actions</div>
+        <div class="card kpi">
+          <div class="kpi__label">Total registrations</div>
+          <div class="kpi__num">{{ totalReg() }}</div>
+          <div class="muted" style="font-size: 0.8125rem;">across {{ actions().length }} actions</div>
         </div>
-        <div class="stat">
-          <div class="stat__label">Fill rate</div>
-          <div class="stat__value">{{ fillRate() }}%</div>
-          <div class="stat__sub">avg across all actions</div>
+        <div class="card kpi">
+          <div class="kpi__label">Fill rate</div>
+          <div class="kpi__num">{{ fillRate() }}%</div>
+          <div class="muted" style="font-size: 0.8125rem;">avg across all actions</div>
         </div>
-        <div class="stat">
-          <div class="stat__label">Ideas pending</div>
-          <div class="stat__value">{{ pendingProposals() }}</div>
-          <div class="stat__sub">submitted this season</div>
+        <div class="card kpi">
+          <div class="kpi__label">Ideas pending</div>
+          <div class="kpi__num">{{ pendingProposals() }}</div>
+          <div class="muted" style="font-size: 0.8125rem;">submitted this season</div>
         </div>
       </div>
 
@@ -61,8 +70,21 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
           }
         </div>
       } @else if (actions().length === 0) {
-        <div class="table-wrap" style="padding: 48px 24px; text-align: center;">
-          <p class="muted">No actions yet. <a routerLink="/admin/actions/new" style="color:var(--navy);">Create the first one.</a></p>
+        <div class="empty card" style="padding: 64px 24px;">
+          <svg class="illo" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="120" cy="200" rx="80" ry="10" fill="rgba(32,44,80,0.08)"/>
+            <circle cx="90" cy="120" r="38" fill="#3A4A7E"/>
+            <circle cx="150" cy="120" r="38" fill="#4A5C92"/>
+            <path d="M120 130 C 110 122, 110 138, 120 150 C 130 138, 130 122, 120 130 Z" fill="#F4E443"/>
+            <circle cx="90" cy="92" r="14" fill="#2C3A66"/>
+            <circle cx="150" cy="92" r="14" fill="#3A4A7E"/>
+          </svg>
+          <h3>No actions yet — start with one</h3>
+          <p>They'll show up here as you create them.</p>
+          <a class="btn btn--yellow" routerLink="/admin/actions/new" style="margin-top: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New action
+          </a>
         </div>
       } @else {
         <div class="table-wrap">
@@ -74,7 +96,7 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
                 <th>Location</th>
                 <th>Status</th>
                 <th>Fill</th>
-                <th style="text-align:right;">&nbsp;</th>
+                <th>&nbsp;</th>
               </tr>
             </thead>
             <tbody>
@@ -95,40 +117,42 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
                   <td>{{ a.location || '—' }}</td>
                   <td>
                     @if (a.isClosed) {
-                      <span class="pill pill--full">Closed</span>
+                      <span class="pill pill--closed"><span class="dot"></span>Closed</span>
                     } @else if (a.seatsRemaining === 0) {
-                      <span class="pill pill--full">Full</span>
+                      <span class="pill pill--full"><span class="dot"></span>Full</span>
                     } @else if (a.seatsRemaining <= 3) {
-                      <span class="pill pill--soon">{{ a.seatsRemaining }} left</span>
+                      <span class="pill pill--almost">{{ a.seatsRemaining }} left</span>
                     } @else {
-                      <span class="pill pill--open pill--dot">Open</span>
+                      <span class="pill pill--open"><span class="dot"></span>Open</span>
                     }
                   </td>
                   <td>
-                    <span class="fill"><span [style.width.%]="percent(a)"></span></span>
-                    <span class="cell-sub">{{ a.registeredCount }} / {{ a.capacity }}</span>
+                    <div class="cell-fill">
+                      <div class="progress" [class.progress--urgent]="percent(a) >= 75 && !a.isClosed">
+                        <div class="progress__bar" [style.width.%]="percent(a)"></div>
+                      </div>
+                      <span class="cell-sub">{{ a.registeredCount }} / {{ a.capacity }}</span>
+                    </div>
                   </td>
                   <td>
                     <div class="row-actions">
-                      <button class="icon-btn" type="button" aria-label="Share with QR"
-                              title="Share with QR"
-                              (click)="openQr(a)">
-                        <i class="pi pi-qrcode"></i>
+                      <button class="btn btn--icon btn--ghost" type="button" aria-label="Share with QR" title="Share with QR" (click)="openQr(a)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="18" y1="14" x2="18" y2="18"/><line x1="14" y1="18" x2="21" y2="18"/></svg>
                       </button>
-                      <a class="icon-btn" [routerLink]="['/admin/actions', a.id, 'edit']"
-                         aria-label="Edit">
-                        <i class="pi pi-pencil"></i>
+                      <span class="sep"></span>
+                      <a class="btn btn--icon btn--ghost" [routerLink]="['/admin/actions', a.id, 'edit']" aria-label="Edit" title="Edit">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                       </a>
-                      <button class="icon-btn" type="button" aria-label="Duplicate"
-                              [disabled]="busy() === a.id"
-                              (click)="duplicate(a.id)">
-                        <i class="pi pi-copy"></i>
+                      <span class="sep"></span>
+                      <button class="btn btn--icon btn--ghost" type="button" aria-label="Duplicate" title="Duplicate"
+                              [disabled]="busy() === a.id" (click)="duplicate(a.id)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                       </button>
                       @if (!a.isClosed) {
-                        <button class="icon-btn" type="button" aria-label="Close"
-                                [disabled]="busy() === a.id"
-                                (click)="close(a.id)">
-                          <i class="pi pi-lock"></i>
+                        <span class="sep"></span>
+                        <button class="btn btn--icon btn--ghost" type="button" aria-label="Close" title="Close"
+                                [disabled]="busy() === a.id" (click)="close(a.id)">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         </button>
                       }
                     </div>
@@ -150,7 +174,7 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
     </div>
   `,
   styles: [`
-    :host { display: block; background: var(--surface); min-height: calc(100vh - var(--header-h)); }
+    :host { display: block; background: var(--bg); min-height: calc(100vh - var(--header-h)); }
 
     .admin-head {
       display: flex;
@@ -158,86 +182,24 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
       justify-content: space-between;
       gap: 16px;
       padding-bottom: 24px;
-    }
-    .admin-head h1 {
-      font-size: 28px;
-      line-height: 1.2;
-      letter-spacing: -0.02em;
-      font-weight: 600;
-      color: var(--navy);
-      margin: 0 0 6px;
+      flex-wrap: wrap;
     }
 
-    .stats {
+    .kpi-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       padding-bottom: 24px;
     }
-    @media (max-width: 880px) { .stats { grid-template-columns: repeat(2, 1fr); } }
-    .stat {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 18px 20px;
-    }
-    .stat__label {
-      font-size: 12px;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--text-subtle);
-      font-weight: 500;
-      margin-bottom: 8px;
-    }
-    .stat__value {
-      font-size: 28px;
-      font-weight: 600;
-      color: var(--navy);
-      letter-spacing: -0.015em;
-      line-height: 1;
-    }
-    .stat__sub { margin-top: 8px; font-size: 12.5px; color: var(--text-muted); }
+    @media (max-width: 880px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 
-    .cell-title { font-weight: 500; color: var(--navy); display: block; }
-    .cell-sub { color: var(--text-muted); font-size: 12.5px; }
+    .cell-title { font-weight: 600; color: var(--ink); display: block; }
+    .cell-sub { color: var(--muted); font-size: 0.8125rem; }
 
-    .fill {
-      width: 90px;
-      height: 4px;
-      background: var(--surface-2);
-      border-radius: 2px;
-      overflow: hidden;
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: 10px;
+    .cell-fill {
+      display: flex; align-items: center; gap: 12px;
     }
-    .fill > span { display: block; height: 100%; background: var(--navy); }
-
-    .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
-    .icon-btn {
-      width: 32px;
-      height: 32px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--radius-sm);
-      border: 0;
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-    }
-    .icon-btn:hover { background: var(--surface); color: var(--navy); }
-    .icon-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
-    .icon-btn i { font-size: 14px; }
-    .badge-count {
-      background: var(--navy);
-      color: var(--white);
-      font-size: 11px;
-      font-weight: 600;
-      padding: 1px 7px;
-      border-radius: 999px;
-      margin-left: 6px;
-    }
+    .cell-fill .progress { width: 110px; flex-shrink: 0; }
   `]
 })
 export class AdminActionsComponent implements OnInit, OnDestroy {
@@ -245,7 +207,6 @@ export class AdminActionsComponent implements OnInit, OnDestroy {
   private proposalsApi = inject(ProposalsService);
   private events = inject(EventsService);
 
-  /** SSE unsubscribe handles. */
   private offEvents: Array<() => void> = [];
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -253,7 +214,6 @@ export class AdminActionsComponent implements OnInit, OnDestroy {
   readonly actions = signal<CharityAction[]>([]);
   readonly busy = signal<number | null>(null);
   readonly pendingProposals = signal(0);
-  /** The action whose QR modal is currently open (or null). */
   readonly qrAction = signal<CharityAction | null>(null);
 
   openQr(a: CharityAction): void { this.qrAction.set(a); }
@@ -271,8 +231,6 @@ export class AdminActionsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.refresh();
     this.refreshPending();
-
-    // Real-time: refresh table on any action change, refresh proposals badge on any proposal change.
     this.offEvents.push(
       this.events.on('action.', () => this.scheduleRefresh()),
       this.events.on('registration.', () => this.scheduleRefresh()),

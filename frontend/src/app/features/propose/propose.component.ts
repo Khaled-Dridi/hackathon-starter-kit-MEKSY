@@ -12,166 +12,182 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
   standalone: true,
   imports: [FormsModule, DatePipe, RouterLink, ImagePickerComponent],
   template: `
-    <div class="container container--narrow" style="padding: 56px 0 64px;">
-      <section class="propose__intro">
-        <p class="eyebrow">Bottom-up</p>
-        <h1>Suggest an action you'd like to see happen.</h1>
-        <p class="meta">An NGO you trust, a cause that matters to you, a format we haven't tried.</p>
-      </section>
+    <section class="hero-band">
+      <div class="container">
+        <div>
+          <div class="page-title-row"><h1 class="page-title has-dot">Share your idea</h1></div>
+          <p class="page-subtitle">Got an action in mind? Drop it here — the team reads every one.</p>
+        </div>
+      </div>
+    </section>
 
-      <section class="propose-card">
-        <form (ngSubmit)="submit()" #f="ngForm">
-          <h2>Your idea</h2>
+    <div class="container" style="padding: 32px 0 64px;">
+      <div class="grid-12">
+        <!-- Left: form -->
+        <div class="col-main">
+          <form class="card" (ngSubmit)="submit()" #f="ngForm" style="padding: 24px 26px;">
 
-          <div class="field">
-            <label class="field__label" for="idea-title">Short title</label>
-            <input class="input" id="idea-title" name="title" type="text"
-                   placeholder="e.g. CV workshops for people re-entering the workforce"
-                   [(ngModel)]="title" required maxlength="200" />
-            <p class="field__hint">One line, no jargon.</p>
-          </div>
-
-          <div class="field" style="margin-top: 18px;">
-            <label class="field__label" for="idea-desc">What would it involve?</label>
-            <textarea class="textarea" id="idea-desc" name="description" rows="5"
-                      placeholder="What would participants do? Who benefits? Roughly how many hours? Anything we should know about the NGO?"
-                      [(ngModel)]="description"></textarea>
-          </div>
-
-          <div class="field" style="margin-top: 18px;">
-            <label class="field__label">Image (optional)</label>
-            <app-image-picker [value]="imageUrl" (valueChange)="imageUrl = $event" />
-            <p class="field__hint">
-              A photo of the cause, the place, or the NGO helps reviewers picture your idea.
-            </p>
-          </div>
-
-          @if (success()) {
-            <p class="propose-ok" role="status">
-              <i class="pi pi-check-circle"></i> Idea submitted. The Charity Day team will review it shortly.
-            </p>
-          }
-          @if (error()) {
-            <p class="propose-err" role="alert">{{ error() }}</p>
-          }
-
-          <div class="form-actions">
-            <a class="btn btn--ghost" routerLink="/actions">Cancel</a>
-            <button class="btn btn--primary" type="submit" [disabled]="submitting() || f.invalid">
-              @if (submitting()) { Submitting… } @else { Submit idea }
-            </button>
-          </div>
-        </form>
-      </section>
-
-      @if (mine().length > 0) {
-        <section class="submitted-strip" aria-label="Your ideas">
-          <h3>Your recent ideas</h3>
-          @for (p of mine(); track p.id) {
-            <div class="row--between mine-row">
-              <div class="mine-row__left">
-                @if (p.imageUrl) {
-                  <img class="mine-row__thumb" [src]="p.imageUrl" alt="" loading="lazy" />
-                }
-                <div>
-                  <span style="color: var(--text); font-weight: 500;">{{ p.title }}</span>
-                  <span class="meta" style="display:block; font-size:12px;">
-                    Submitted {{ p.createdAt | date:'MMM d' }}
-                  </span>
+            @if (success()) {
+              <div class="banner banner--success" role="status" style="margin-bottom: 20px;">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <div class="banner__body">
+                  <strong>Thanks — your idea is in.</strong>
+                  We'll let you know the moment it's reviewed.
                 </div>
               </div>
-              @switch (p.status) {
-                @case ('PENDING')  { <span class="pill pill--soon">In review</span> }
-                @case ('ACCEPTED') { <span class="pill pill--open pill--dot">Accepted</span> }
-                @case ('REJECTED') { <span class="pill pill--full">Not retained</span> }
-              }
+            }
+            @if (error()) {
+              <div class="banner banner--error" role="alert" style="margin-bottom: 20px;">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div class="banner__body">{{ error() }}</div>
+              </div>
+            }
+
+            <h2 class="card-title" style="margin-bottom: 18px; font-size: 1.125rem;">Your idea</h2>
+
+            <div class="field">
+              <label class="field__label" for="idea-title">Short title</label>
+              <input class="input" id="idea-title" name="title" type="text"
+                     placeholder="e.g. CV workshops for people re-entering the workforce"
+                     [(ngModel)]="title" required maxlength="200" />
+              <p class="field__hint">One line, no jargon.</p>
             </div>
+
+            <div class="field" style="margin-top: 18px;">
+              <label class="field__label" for="idea-desc">What would it involve?</label>
+              <textarea class="textarea" id="idea-desc" name="description" rows="5"
+                        placeholder="What would participants do? Who benefits? Roughly how many hours? Anything we should know about the NGO?"
+                        [(ngModel)]="description"></textarea>
+            </div>
+
+            <div class="field" style="margin-top: 18px;">
+              <label class="field__label">Cover image (optional)</label>
+              <app-image-picker [value]="imageUrl" (valueChange)="imageUrl = $event" />
+              <p class="field__hint">A photo of the cause, the place, or the NGO helps reviewers picture your idea.</p>
+            </div>
+
+            <div class="form-actions">
+              <a class="btn btn--ghost" routerLink="/actions">Cancel</a>
+              <button class="btn btn--yellow" type="submit"
+                      [disabled]="submitting() || f.invalid"
+                      [class.btn--loading]="submitting()">
+                Submit idea
+              </button>
+            </div>
+          </form>
+
+          @if (mine().length > 0) {
+            <section class="submitted-strip card" aria-label="Your ideas">
+              <h3 class="card-title" style="margin-bottom: 16px;">Your recent ideas</h3>
+              <div class="stack-3">
+                @for (p of mine(); track p.id) {
+                  <div class="mine-row">
+                    <div class="mine-row__left">
+                      @if (p.imageUrl) {
+                        <img class="mine-row__thumb" [src]="p.imageUrl" alt="" loading="lazy" />
+                      } @else {
+                        <span class="mine-row__thumb mine-row__thumb--ph cover-gradient--a"></span>
+                      }
+                      <div class="stack-2" style="min-width: 0;">
+                        <span class="mine-row__title">{{ p.title }}</span>
+                        <span class="muted" style="font-size: 0.8125rem;">
+                          Submitted {{ p.createdAt | date:'MMM d' }}
+                        </span>
+                      </div>
+                    </div>
+                    @switch (p.status) {
+                      @case ('PENDING')  { <span class="pill pill--pending"><span class="dot"></span>In review</span> }
+                      @case ('ACCEPTED') { <span class="pill pill--accepted"><span class="dot"></span>Accepted</span> }
+                      @case ('REJECTED') { <span class="pill pill--rejected"><span class="dot"></span>Not retained</span> }
+                    }
+                  </div>
+                }
+              </div>
+            </section>
           }
-        </section>
-      }
+        </div>
+
+        <!-- Right: how it works -->
+        <aside class="col-rail">
+          <div class="card" style="padding: 22px 24px;">
+            <p class="t-xs muted" style="margin-bottom: 8px;">How proposals work</p>
+            <h3 class="card-title" style="margin-bottom: 16px;">From idea to action</h3>
+            <ol class="how-list">
+              <li>
+                <span class="how-num">1</span>
+                <div>
+                  <strong>Submit your idea.</strong>
+                  <p class="muted">Title and a few lines on what you're imagining.</p>
+                </div>
+              </li>
+              <li>
+                <span class="how-num">2</span>
+                <div>
+                  <strong>Admin team reviews.</strong>
+                  <p class="muted">Usually within a week. You'll be notified either way.</p>
+                </div>
+              </li>
+              <li>
+                <span class="how-num">3</span>
+                <div>
+                  <strong>It becomes a real action.</strong>
+                  <p class="muted">Approved ideas show up on the actions page for everyone.</p>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <div class="card" style="padding: 22px 24px; margin-top: 16px; background: var(--surface-2);">
+            <p class="muted" style="font-size: 0.875rem; line-height: 1.55; margin: 0;">
+              <strong style="color: var(--ink);">Pro tip.</strong>
+              Concrete proposals (named NGO, rough date, specific format) move faster than vague ones.
+            </p>
+          </div>
+        </aside>
+      </div>
     </div>
   `,
   styles: [`
-    :host { display: block; background: var(--white); }
-
-    .propose__intro h1 {
-      font-size: 32px;
-      line-height: 1.2;
-      letter-spacing: -0.02em;
-      font-weight: 600;
-      color: var(--navy);
-      margin: 0 0 10px;
-      max-width: 28ch;
-    }
-    .propose__intro .meta { font-size: 15px; max-width: 56ch; }
-
-    .propose-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 28px 28px 32px;
-      margin-top: 32px;
-    }
-    .propose-card h2 {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--navy);
-      margin: 0 0 18px;
-    }
-
-    .propose-ok {
-      margin: 18px 0 0;
-      padding: 10px 12px;
-      background: #E8F4ED;
-      color: #1B7F4F;
-      border-radius: var(--radius);
-      font-size: 13.5px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .propose-err {
-      margin: 18px 0 0;
-      padding: 10px 12px;
-      background: #FBEDED;
-      color: #8B1F1F;
-      border-radius: var(--radius);
-      font-size: 13.5px;
-    }
+    :host { display: block; background: var(--bg); }
 
     .form-actions {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 24px;
+      margin-top: 28px;
     }
 
-    .submitted-strip {
-      margin-top: 40px;
-      padding: 20px 22px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      background: var(--surface);
+    .submitted-strip { margin-top: 24px; padding: 22px 24px; }
+    .mine-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
     }
-    .submitted-strip h3 {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--navy);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin: 0 0 14px;
-    }
-    .submitted-strip .row--between {
-      padding: 10px 0;
-      border-top: 1px solid var(--border);
-    }
-    .submitted-strip .row--between:first-of-type { border-top: 0; }
-    .mine-row__left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .mine-row__left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
     .mine-row__thumb {
-      width: 40px; height: 40px;
+      width: 44px; height: 44px;
       object-fit: cover;
-      border-radius: var(--radius-sm);
+      border-radius: 10px;
       background: var(--surface-2);
+      flex-shrink: 0;
+      display: block;
+    }
+    .mine-row__thumb--ph { background: var(--ink); }
+    .mine-row__title {
+      color: var(--ink); font-weight: 500; font-size: 0.9375rem;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .how-list {
+      display: flex; flex-direction: column; gap: 18px;
+      list-style: none; padding: 0; margin: 0;
+    }
+    .how-list li { display: flex; gap: 14px; align-items: flex-start; }
+    .how-list strong { color: var(--ink); font-size: 0.9375rem; font-weight: 600; }
+    .how-list .muted { font-size: 0.875rem; margin: 2px 0 0; line-height: 1.5; }
+    .how-num {
+      width: 28px; height: 28px; border-radius: 999px;
+      background: var(--ink); color: var(--accent);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.8125rem; font-weight: 700;
       flex-shrink: 0;
     }
   `]
@@ -181,7 +197,6 @@ export class ProposeComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private events = inject(EventsService);
 
-  /** SSE unsubscribe handles. */
   private offEvents: Array<() => void> = [];
 
   title = '';
@@ -194,9 +209,6 @@ export class ProposeComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.refreshMine();
-
-    // Real-time: if an admin changes the status of one of *my* proposals,
-    // the server sends a personal proposal.status.changed event. Refresh.
     this.offEvents.push(
       this.events.on('proposal.status.changed', () => this.refreshMine()),
     );
