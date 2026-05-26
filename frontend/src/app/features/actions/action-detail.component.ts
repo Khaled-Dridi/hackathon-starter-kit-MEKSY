@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ActionsService, CharityAction, Registrant } from '../../core/actions.service';
 import { AuthService } from '../../core/auth.service';
 import { EventsService } from '../../core/events.service';
+import { I18nService } from '../../core/i18n.service';
 import { ActionMapComponent } from '../../shared/action-map.component';
 import { ActionFeedComponent } from '../../shared/action-feed.component';
 import { ActionChatComponent } from '../../shared/action-chat.component';
@@ -44,14 +45,14 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
           <div class="breadcrumb__crumbs">
             <a routerLink="/actions">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-2px; margin-right:4px;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-              Actions
+              {{ i18n.t('detail.breadcrumb.actions') }}
             </a>
             <span class="breadcrumb__sep">/</span>
             <span class="current">{{ a.title }}</span>
           </div>
           <button type="button" class="btn btn--secondary btn--sm" (click)="qrOpen.set(true)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="18" y1="14" x2="18" y2="18"/><line x1="14" y1="18" x2="21" y2="18"/><line x1="18" y1="21" x2="21" y2="21"/></svg>
-            Share with QR
+            {{ i18n.t('detail.share.qr') }}
           </button>
         </nav>
 
@@ -70,7 +71,7 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
               <div class="detail__meta">
                 <span class="row">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  {{ a.actionDate | date:'EEEE, MMMM d' }} · {{ a.actionDate | date:'HH:mm' }}
+                  {{ a.actionDate | date:'EEEE, MMMM d':'':i18n.locale() }} · {{ a.actionDate | date:'HH:mm':'':i18n.locale() }}
                 </span>
                 @if (a.location) {
                   <span class="row">
@@ -83,9 +84,9 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
 
             @if (a.imageUrl) {
               <img class="detail__cover detail__cover--image" [src]="a.imageUrl"
-                   [alt]="'Cover image for ' + a.title" />
+                   [alt]="'Cover for ' + a.title" />
             } @else {
-              <div class="detail__cover cover-gradient--b" role="img" [attr.aria-label]="'Visual for ' + a.title">
+              <div class="detail__cover cover-gradient--b" role="img" [attr.aria-label]="a.title">
                 <span class="cover-tile"></span>
                 <span class="cover-decor"></span>
               </div>
@@ -93,31 +94,31 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
 
             <section class="prose">
               @if (a.description) {
-                <h2 class="section-title">About this action</h2>
+                <h2 class="section-title">{{ i18n.t('detail.section.about') }}</h2>
                 @for (p of paragraphs(a.description); track $index) {
                   <p>{{ p }}</p>
                 }
               }
 
-              <h2 class="section-title">Where & when</h2>
+              <h2 class="section-title">{{ i18n.t('detail.section.where') }}</h2>
               <dl class="dl">
                 <div>
-                  <dt>Date</dt>
-                  <dd>{{ a.actionDate | date:'EEEE, MMMM d, y' }}</dd>
+                  <dt>{{ i18n.t('detail.field.date') }}</dt>
+                  <dd>{{ a.actionDate | date:'EEEE, MMMM d, y':'':i18n.locale() }}</dd>
                 </div>
                 <div>
-                  <dt>Time</dt>
-                  <dd>{{ a.actionDate | date:'HH:mm' }}</dd>
+                  <dt>{{ i18n.t('detail.field.time') }}</dt>
+                  <dd>{{ a.actionDate | date:'HH:mm':'':i18n.locale() }}</dd>
                 </div>
                 @if (a.location) {
                   <div>
-                    <dt>Location</dt>
+                    <dt>{{ i18n.t('detail.field.location') }}</dt>
                     <dd>{{ a.location }}</dd>
                   </div>
                 }
                 @if (a.oddTag) {
                   <div>
-                    <dt>SDG</dt>
+                    <dt>{{ i18n.t('detail.field.sdg') }}</dt>
                     <dd>{{ a.oddTag }}</dd>
                   </div>
                 }
@@ -130,7 +131,7 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
               }
 
               @if (a.impactSummary) {
-                <h2 class="section-title">Reported impact</h2>
+                <h2 class="section-title">{{ i18n.t('detail.section.impact') }}</h2>
                 <p>{{ a.impactSummary }}</p>
               }
             </section>
@@ -148,28 +149,28 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
               (closed)="qrOpen.set(false)" />
           </div>
 
-          <aside class="aside" aria-label="Registration">
+          <aside class="aside" [attr.aria-label]="i18n.t('detail.reg.label')">
             <div class="registration card">
               <div class="registration__head">
-                <span class="label">Registration</span>
+                <span class="label">{{ i18n.t('detail.reg.label') }}</span>
                 @if (a.isClosed) {
-                  <span class="pill pill--closed"><span class="dot"></span>Closed</span>
+                  <span class="pill pill--closed"><span class="dot"></span>{{ i18n.t('actions.card.closed') }}</span>
                 } @else if (a.seatsRemaining === 0) {
-                  <span class="pill pill--full"><span class="dot"></span>Full</span>
+                  <span class="pill pill--full"><span class="dot"></span>{{ i18n.t('actions.card.full') }}</span>
                 } @else if (a.seatsRemaining <= 3) {
-                  <span class="pill pill--almost">{{ a.seatsRemaining }} seats left</span>
+                  <span class="pill pill--almost">{{ i18n.t('actions.card.seatsLeft', { n: a.seatsRemaining }) }}</span>
                 } @else {
-                  <span class="pill pill--open"><span class="dot"></span>Open</span>
+                  <span class="pill pill--open"><span class="dot"></span>{{ i18n.t('actions.card.open') }}</span>
                 }
               </div>
 
               <div class="registration__seats-block">
                 <div class="registration__count">
                   <strong>{{ a.registeredCount }}</strong>
-                  <span class="muted">of {{ a.capacity }} seats filled</span>
+                  <span class="muted">{{ i18n.t('detail.reg.count.of', { n: a.capacity }) }}</span>
                 </div>
                 @if (!a.isClosed && a.seatsRemaining > 0) {
-                  <div class="registration__left">{{ a.seatsRemaining }} left</div>
+                  <div class="registration__left">{{ i18n.t('detail.reg.left', { n: a.seatsRemaining }) }}</div>
                 }
                 <div class="progress" [class.progress--urgent]="isUrgent(a)" style="margin-top: 10px;">
                   <div class="progress__bar" [style.width.%]="fillPercent(a)"></div>
@@ -180,21 +181,21 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
                 <button class="btn btn--secondary btn--lg btn--block" type="button"
                         [disabled]="busy()" [class.btn--loading]="busy()"
                         (click)="unregister(a.id)">
-                  Cancel my spot
+                  {{ i18n.t('detail.reg.cancelMine') }}
                 </button>
                 <p class="registration__meta">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1E9D6B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><polyline points="20 6 9 17 4 12"/></svg>
-                  You're in. We'll send the practical details by email.
+                  {{ i18n.t('detail.reg.imIn') }}
                 </p>
               } @else {
                 <button class="btn btn--yellow btn--lg btn--block" type="button"
                         [disabled]="busy() || a.isClosed || a.seatsRemaining === 0"
                         [class.btn--loading]="busy()"
                         (click)="register(a.id)">
-                  Sign me up
+                  {{ i18n.t('detail.reg.signMeUp') }}
                 </button>
                 <p class="registration__meta">
-                  You'll get all the practical details by email after joining.
+                  {{ i18n.t('detail.reg.afterSignup') }}
                 </p>
               }
 
@@ -209,7 +210,7 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
             @if (isAdmin() && registrants(); as rs) {
               <div class="registrants-card card">
                 <div class="row--between" style="margin-bottom: 12px;">
-                  <h3 class="card-title">Registrants</h3>
+                  <h3 class="card-title">{{ i18n.t('detail.registrants.title') }}</h3>
                   <span class="meta">{{ rs.length }} / {{ a.capacity }}</span>
                 </div>
                 <div class="registrants">
@@ -218,14 +219,14 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
                       <span class="avatar avatar--sm" [class]="avatarColor(r.email)">{{ initials(r.email) }}</span>
                       <span class="stack-2" style="flex:1; min-width:0;">
                         <span class="meta-name">{{ r.email }}</span>
-                        <span class="meta-team muted">Registered {{ r.registeredAt | date:'MMM d, HH:mm' }}</span>
+                        <span class="meta-team muted">{{ i18n.t('detail.registrants.registeredAt', { date: (r.registeredAt | date:'MMM d, HH:mm':'':i18n.locale()) || '' }) }}</span>
                       </span>
                     </div>
                   } @empty {
-                    <p class="muted">No registrants yet.</p>
+                    <p class="muted">{{ i18n.t('detail.registrants.none') }}</p>
                   }
                 </div>
-                <p class="admin-only-note">Admin view · employees see only their own status</p>
+                <p class="admin-only-note">{{ i18n.t('detail.registrants.note') }}</p>
               </div>
             }
           </aside>
@@ -233,7 +234,7 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
       </div>
     } @else {
       <div class="container" style="padding: 56px 0;">
-        <p class="muted">Action not found.</p>
+        <p class="muted">{{ i18n.t('detail.notFound') }}</p>
       </div>
     }
   `,
@@ -362,6 +363,7 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
   `]
 })
 export class ActionDetailComponent implements OnInit, OnDestroy {
+  readonly i18n = inject(I18nService);
   private route = inject(ActivatedRoute);
   private actionsApi = inject(ActionsService);
   private auth = inject(AuthService);
@@ -445,14 +447,13 @@ export class ActionDetailComponent implements OnInit, OnDestroy {
     this.busy.set(false);
     const code = err?.error?.code;
     const map: Record<string, string> = {
-      action_full: 'This action is already full.',
-      action_closed: 'Registrations are closed for this action.',
-      already_registered: 'You are already registered for this action.',
-      already_registered_this_year:
-        "You've already joined one action this year — that's your slot used up. Free it by cancelling that one.",
-      not_registered: 'You are not registered for this action.'
+      action_full: this.i18n.t('detail.err.full'),
+      action_closed: this.i18n.t('detail.err.closed'),
+      already_registered: this.i18n.t('detail.err.already'),
+      already_registered_this_year: this.i18n.t('detail.err.alreadyYear'),
+      not_registered: this.i18n.t('detail.err.notReg'),
     };
-    this.errorMsg.set(map[code] ?? err?.error?.message ?? 'Something went wrong.');
+    this.errorMsg.set(map[code] ?? err?.error?.message ?? this.i18n.t('detail.err.generic'));
   }
 
   fillPercent(a: CharityAction): number {

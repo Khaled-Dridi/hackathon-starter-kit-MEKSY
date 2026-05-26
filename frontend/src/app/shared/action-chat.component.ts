@@ -18,6 +18,7 @@ import { FormsModule } from '@angular/forms';
 import { ActionChatService, ChatMessage } from '../core/action-chat.service';
 import { AuthService } from '../core/auth.service';
 import { EventsService, DomainEvent } from '../core/events.service';
+import { I18nService } from '../core/i18n.service';
 
 /**
  * Per-action chat panel. Renders a WhatsApp-style bubble list with my
@@ -42,27 +43,24 @@ import { EventsService, DomainEvent } from '../core/events.service';
   template: `
     <section class="chat">
       <header class="chat__head">
-        <h2>Chat</h2>
+        <h2>{{ i18n.t('chat.title') }}</h2>
         <span class="meta">
-          @if (canChat) { Private channel for registered participants }
-          @else         { Registered participants only }
+          @if (canChat) { {{ i18n.t('chat.meta.canChat') }} }
+          @else         { {{ i18n.t('chat.meta.locked') }} }
         </span>
       </header>
 
       @if (!canChat) {
         <div class="chat__locked">
           <i class="pi pi-lock"></i>
-          <p>
-            The chat is only for people <strong>registered for this action</strong>.
-            Register on the right to join.
-          </p>
+          <p [innerHTML]="i18n.t('chat.locked.body')"></p>
         </div>
       } @else {
         <div #scroll class="chat__scroll" role="log" aria-live="polite">
           @if (loading()) {
-            <p class="empty">Loading messages…</p>
+            <p class="empty">{{ i18n.t('chat.loading') }}</p>
           } @else if (messages().length === 0) {
-            <p class="empty">No messages yet. Say hello!</p>
+            <p class="empty">{{ i18n.t('chat.empty') }}</p>
           } @else {
             @for (m of messages(); track m.id) {
               <div class="msg" [class.msg--mine]="m.authorId === myUserId()">
@@ -74,7 +72,7 @@ import { EventsService, DomainEvent } from '../core/events.service';
                     <span class="bubble__name">{{ m.authorEmail }}</span>
                   }
                   <p class="bubble__text">{{ m.body }}</p>
-                  <span class="bubble__time">{{ m.createdAt | date:'HH:mm' }}</span>
+                  <span class="bubble__time">{{ m.createdAt | date:'HH:mm':'':i18n.locale() }}</span>
                 </div>
               </div>
             }
@@ -84,12 +82,12 @@ import { EventsService, DomainEvent } from '../core/events.service';
         <form class="chat__composer" (ngSubmit)="send()" #f="ngForm">
           <input type="text" class="chat__input" name="body"
                  [(ngModel)]="draft"
-                 placeholder="Type a message…"
+                 [placeholder]="i18n.t('chat.input.placeholder')"
                  autocomplete="off"
                  [disabled]="sending()" />
           <button class="btn btn--primary btn--sm" type="submit"
                   [disabled]="!draft.trim() || sending()">
-            @if (sending()) { Sending… } @else { Send }
+            @if (sending()) { {{ i18n.t('chat.sending') }} } @else { {{ i18n.t('chat.send') }} }
           </button>
         </form>
 
@@ -254,6 +252,7 @@ export class ActionChatComponent implements OnInit, OnChanges, OnDestroy, AfterV
 
   @ViewChild('scroll') scrollEl?: ElementRef<HTMLDivElement>;
 
+  readonly i18n = inject(I18nService);
   private chat = inject(ActionChatService);
   private auth = inject(AuthService);
   private events = inject(EventsService);
@@ -331,7 +330,7 @@ export class ActionChatComponent implements OnInit, OnChanges, OnDestroy, AfterV
         this.loading.set(false);
         // 403 means the user lost access (e.g., unregistered just now).
         if (err.status !== 403) {
-          this.errorMsg.set('Could not load chat. Try again in a moment.');
+          this.errorMsg.set(this.i18n.t('chat.err.load'));
         }
       },
     });
@@ -352,7 +351,7 @@ export class ActionChatComponent implements OnInit, OnChanges, OnDestroy, AfterV
       },
       error: (err) => {
         this.sending.set(false);
-        this.errorMsg.set(err?.error?.message ?? 'Could not send message.');
+        this.errorMsg.set(err?.error?.message ?? this.i18n.t('chat.err.send'));
       },
     });
   }

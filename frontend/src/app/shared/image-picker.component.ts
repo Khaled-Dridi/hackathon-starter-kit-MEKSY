@@ -9,6 +9,7 @@ import {
 import { FormsModule } from '@angular/forms';
 
 import { FilesService } from '../core/files.service';
+import { I18nService } from '../core/i18n.service';
 
 @Component({
   selector: 'app-image-picker',
@@ -21,13 +22,13 @@ import { FilesService } from '../core/files.service';
                 [class.is-active]="mode() === 'upload'"
                 (click)="setMode('upload')">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Upload
+          {{ i18n.t('pick.tab.upload') }}
         </button>
         <button type="button" role="tab"
                 [class.is-active]="mode() === 'url'"
                 (click)="setMode('url')">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.71"/></svg>
-          Paste URL
+          {{ i18n.t('pick.tab.url') }}
         </button>
       </div>
 
@@ -39,24 +40,24 @@ import { FilesService } from '../core/files.service';
           @if (uploading()) {
             <div class="dropzone__msg">
               <span class="spin"></span>
-              <span>Uploading… {{ progressPercent() }}%</span>
+              <span>{{ i18n.t('pick.upload.uploading', { n: progressPercent() }) }}</span>
             </div>
           } @else {
             <svg class="icon" style="width:32px; height:32px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             <div class="dropzone__msg">
-              Drop a file here, or
-              <button type="button" class="link" (click)="fileInput.click()">browse</button>
+              {{ i18n.t('pick.upload.dropOr') }}
+              <button type="button" class="link" (click)="fileInput.click()">{{ i18n.t('pick.upload.browse') }}</button>
             </div>
-            <span class="dropzone__hint">JPEG / PNG / WebP / GIF · up to 5 MB</span>
+            <span class="dropzone__hint">{{ i18n.t('pick.upload.hint') }}</span>
           }
         </label>
       } @else {
         <input class="input" type="url" name="imageUrl"
-               placeholder="https://example.org/photo.jpg"
+               [placeholder]="i18n.t('pick.url.placeholder')"
                [ngModel]="value"
                (ngModelChange)="onUrlChange($event)" />
         <p class="help">
-          Paste any image URL. For sensitive content, prefer uploading.
+          {{ i18n.t('pick.url.help') }}
         </p>
       }
 
@@ -69,8 +70,8 @@ import { FilesService } from '../core/files.service';
 
       @if (value) {
         <div class="preview">
-          <img [src]="value" alt="Preview" (error)="onImgError()" />
-          <button type="button" class="preview__remove" (click)="clear()" aria-label="Remove image">
+          <img [src]="value" alt="" (error)="onImgError()" />
+          <button type="button" class="preview__remove" (click)="clear()" [attr.aria-label]="i18n.t('pick.preview.remove.aria')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -132,6 +133,7 @@ import { FilesService } from '../core/files.service';
   `]
 })
 export class ImagePickerComponent {
+  readonly i18n = inject(I18nService);
   private files = inject(FilesService);
 
   @Input() value: string | null = null;
@@ -167,7 +169,7 @@ export class ImagePickerComponent {
   }
 
   onImgError(): void {
-    this.errorMsg.set("Couldn't load this image — check the URL or try uploading instead.");
+    this.errorMsg.set(this.i18n.t('pick.err.imgLoad'));
   }
 
   clear(): void {
@@ -178,11 +180,11 @@ export class ImagePickerComponent {
   private uploadFile(file: File): void {
     this.errorMsg.set(null);
     if (file.size > 5 * 1024 * 1024) {
-      this.errorMsg.set('File too large — limit is 5 MB.');
+      this.errorMsg.set(this.i18n.t('pick.err.tooLarge'));
       return;
     }
     if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
-      this.errorMsg.set('Only JPEG, PNG, WebP and GIF images are accepted.');
+      this.errorMsg.set(this.i18n.t('pick.err.format'));
       return;
     }
     this.uploading.set(true);
@@ -199,7 +201,7 @@ export class ImagePickerComponent {
       },
       error: (err) => {
         this.uploading.set(false);
-        this.errorMsg.set(err?.error?.message ?? 'Upload failed. Try again.');
+        this.errorMsg.set(err?.error?.message ?? this.i18n.t('pick.err.upload'));
       },
     });
   }

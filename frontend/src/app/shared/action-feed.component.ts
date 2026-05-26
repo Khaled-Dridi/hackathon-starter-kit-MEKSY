@@ -16,6 +16,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { AuthService } from '../core/auth.service';
 import { EventsService, DomainEvent } from '../core/events.service';
 import { FeedPost, FeedService, ReactionType } from '../core/feed.service';
+import { I18nService } from '../core/i18n.service';
 import { MediaPickerComponent, MediaSelection } from './media-picker.component';
 
 @Component({
@@ -25,17 +26,16 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
   template: `
     <section class="feed">
       <header class="feed__head">
-        <h2 class="section-title">Discussion</h2>
-        <span class="muted" style="font-size: 0.875rem;">{{ posts().length }} {{ posts().length === 1 ? 'post' : 'posts' }}</span>
+        <h2 class="section-title">{{ i18n.t('feed.title') }}</h2>
+        <span class="muted" style="font-size: 0.875rem;">{{ posts().length }} {{ posts().length === 1 ? i18n.t('feed.posts.singular') : i18n.t('feed.posts.plural') }}</span>
       </header>
 
-      <!-- Composer -->
       <div class="feed-composer">
         <div class="feed-composer__row">
           <span class="avatar avatar--md" [class]="avatarColor(myEmail())">{{ initials(myEmail()) }}</span>
           <textarea class="feed-composer__input"
                     [(ngModel)]="draftBody" rows="2"
-                    placeholder="Share something with the people coming to this action…"></textarea>
+                    [placeholder]="i18n.t('feed.composer.placeholder')"></textarea>
         </div>
 
         @if (mediaOpen()) {
@@ -47,7 +47,7 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
         <div class="feed-composer__actions">
           <button type="button" class="feed-link-btn" (click)="mediaOpen.set(!mediaOpen())">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            {{ mediaOpen() ? 'Hide media' : 'Add image / video' }}
+            {{ mediaOpen() ? i18n.t('feed.composer.hideMedia') : i18n.t('feed.composer.addMedia') }}
           </button>
           <div class="feed-composer__right">
             @if (submitError()) {
@@ -57,18 +57,17 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
                     [disabled]="!canPost() || submitting()"
                     [class.btn--loading]="submitting()"
                     (click)="submit()">
-              Post
+              {{ i18n.t('feed.composer.post') }}
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Posts -->
       @if (loading()) {
-        <p class="muted" style="padding: 24px 0;">Loading discussion…</p>
+        <p class="muted" style="padding: 24px 0;">{{ i18n.t('feed.loading') }}</p>
       } @else if (posts().length === 0) {
         <p class="feed-empty">
-          No posts yet — be the first to start the conversation.
+          {{ i18n.t('feed.empty') }}
         </p>
       } @else {
         <ul class="feed-post-list">
@@ -78,10 +77,10 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
                 <span class="avatar avatar--md" [class]="avatarColor(p.authorEmail)">{{ initials(p.authorEmail) }}</span>
                 <div class="feed-post__author">
                   <span class="feed-post__name">{{ p.authorEmail }}</span>
-                  <span class="feed-post__time">{{ p.createdAt | date:'MMM d, HH:mm' }}</span>
+                  <span class="feed-post__time">{{ p.createdAt | date:'MMM d, HH:mm':'':i18n.locale() }}</span>
                 </div>
                 @if (p.authorId === myUserId() || isAdmin()) {
-                  <button type="button" class="feed-post__del" (click)="deletePost(p)" title="Delete post" aria-label="Delete post">
+                  <button type="button" class="feed-post__del" (click)="deletePost(p)" [title]="i18n.t('feed.post.delete.aria')" [attr.aria-label]="i18n.t('feed.post.delete.aria')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
                   </button>
                 }
@@ -105,13 +104,12 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
                 </div>
               }
 
-              <!-- Reaction bar -->
               <div class="feed-reactions">
                 @for (r of REACTIONS; track r.type) {
                   <button type="button" class="feed-react-btn"
                           [class.is-mine]="p.myReaction === r.dbKey"
                           (click)="toggleReaction(p, r.type, r.dbKey)"
-                          [title]="r.label">
+                          [title]="i18n.t(r.labelKey)">
                     <span class="feed-react-emoji">{{ r.emoji }}</span>
                     @if (p.reactionCounts[r.dbKey]) {
                       <span class="feed-react-count">{{ p.reactionCounts[r.dbKey] }}</span>
@@ -120,7 +118,6 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
                 }
               </div>
 
-              <!-- Comments -->
               <div class="feed-comments">
                 @if (p.comments.length > 0) {
                   @for (c of p.comments; track c.id) {
@@ -129,9 +126,9 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
                       <div class="feed-comment__body">
                         <div class="feed-comment__head">
                           <span class="feed-comment__name">{{ c.authorEmail }}</span>
-                          <span class="feed-comment__time">{{ c.createdAt | date:'MMM d, HH:mm' }}</span>
+                          <span class="feed-comment__time">{{ c.createdAt | date:'MMM d, HH:mm':'':i18n.locale() }}</span>
                           @if (c.authorId === myUserId() || isAdmin()) {
-                            <button type="button" class="feed-comment__del" (click)="deleteComment(p, c.id)" title="Delete comment" aria-label="Delete comment">
+                            <button type="button" class="feed-comment__del" (click)="deleteComment(p, c.id)" [title]="i18n.t('feed.comment.delete.aria')" [attr.aria-label]="i18n.t('feed.comment.delete.aria')">
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
                           }
@@ -145,13 +142,13 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
                   <span class="avatar avatar--sm" [class]="avatarColor(myEmail())">{{ initials(myEmail()) }}</span>
                   <input type="text" class="feed-comment-input"
                          [(ngModel)]="commentDrafts[p.id]"
-                         placeholder="Write a comment…"
+                         [placeholder]="i18n.t('feed.comment.placeholder')"
                          (keydown.enter)="sendComment(p)" />
                   <button class="btn btn--secondary btn--sm" type="button"
                           [disabled]="!commentDrafts[p.id]?.trim() || commentBusy() === p.id"
                           [class.btn--loading]="commentBusy() === p.id"
                           (click)="sendComment(p)">
-                    Send
+                    {{ i18n.t('feed.comment.send') }}
                   </button>
                 </div>
               </div>
@@ -174,7 +171,6 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
     }
     .feed__head h2 { margin: 0; }
 
-    /* ─── Composer ─── */
     .feed-composer {
       display: block;
       background: var(--surface);
@@ -224,7 +220,6 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
     }
     .feed-link-btn:hover { background: var(--bg); }
 
-    /* ─── Posts ─── */
     .feed-post-list {
       list-style: none; padding: 0; margin: 0;
       display: flex; flex-direction: column; gap: 14px;
@@ -286,7 +281,6 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
     }
     .feed-post__media iframe { aspect-ratio: 16 / 9; height: auto; }
 
-    /* ─── Reactions ─── */
     .feed-reactions {
       display: flex;
       gap: 6px;
@@ -317,7 +311,6 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
     .feed-react-emoji { font-size: 1rem; line-height: 1; }
     .feed-react-count { font-variant-numeric: tabular-nums; font-size: 0.8125rem; font-weight: 500; }
 
-    /* ─── Comments ─── */
     .feed-comments {
       display: flex; flex-direction: column;
       gap: 10px;
@@ -397,18 +390,20 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
 export class ActionFeedComponent implements OnInit, OnChanges, OnDestroy {
   @Input() actionId!: number;
 
+  readonly i18n = inject(I18nService);
   private feed = inject(FeedService);
   private auth = inject(AuthService);
   private events = inject(EventsService);
   private sanitizer = inject(DomSanitizer);
 
-  readonly REACTIONS: { type: ReactionType; dbKey: string; emoji: string; label: string }[] = [
-    { type: 'LIKE',  dbKey: 'like',  emoji: '👍', label: 'Like' },
-    { type: 'LOVE',  dbKey: 'love',  emoji: '❤️', label: 'Love' },
-    { type: 'HAHA',  dbKey: 'haha',  emoji: '😂', label: 'Haha' },
-    { type: 'WOW',   dbKey: 'wow',   emoji: '😮', label: 'Wow' },
-    { type: 'SAD',   dbKey: 'sad',   emoji: '😢', label: 'Sad' },
-    { type: 'ANGRY', dbKey: 'angry', emoji: '😡', label: 'Angry' },
+  // labelKey points into the dictionary; title attribute pulls live via i18n.t().
+  readonly REACTIONS: { type: ReactionType; dbKey: string; emoji: string; labelKey: string }[] = [
+    { type: 'LIKE',  dbKey: 'like',  emoji: '👍', labelKey: 'feed.react.like' },
+    { type: 'LOVE',  dbKey: 'love',  emoji: '❤️', labelKey: 'feed.react.love' },
+    { type: 'HAHA',  dbKey: 'haha',  emoji: '😂', labelKey: 'feed.react.haha' },
+    { type: 'WOW',   dbKey: 'wow',   emoji: '😮', labelKey: 'feed.react.wow' },
+    { type: 'SAD',   dbKey: 'sad',   emoji: '😢', labelKey: 'feed.react.sad' },
+    { type: 'ANGRY', dbKey: 'angry', emoji: '😡', labelKey: 'feed.react.angry' },
   ];
 
   readonly posts = signal<FeedPost[]>([]);
@@ -489,13 +484,13 @@ export class ActionFeedComponent implements OnInit, OnChanges, OnDestroy {
       },
       error: (err) => {
         this.submitting.set(false);
-        this.submitError.set(err?.error?.message ?? 'Could not post.');
+        this.submitError.set(err?.error?.message ?? this.i18n.t('feed.err.post'));
       },
     });
   }
 
   deletePost(p: FeedPost): void {
-    if (!confirm('Delete this post?')) return;
+    if (!confirm(this.i18n.t('feed.post.delete.confirm'))) return;
     this.feed.deletePost(p.id).subscribe({
       next: () => this.refresh(),
     });
@@ -523,7 +518,7 @@ export class ActionFeedComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   deleteComment(p: FeedPost, commentId: number): void {
-    if (!confirm('Delete this comment?')) return;
+    if (!confirm(this.i18n.t('feed.comment.delete.confirm'))) return;
     this.feed.deleteComment(commentId).subscribe({ next: () => this.refresh() });
   }
 

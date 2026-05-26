@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 
 import { Proposal, ProposalsService } from '../../core/proposals.service';
 import { EventsService } from '../../core/events.service';
+import { I18nService } from '../../core/i18n.service';
 import { ImagePickerComponent } from '../../shared/image-picker.component';
 
 @Component({
@@ -15,15 +16,14 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
     <section class="hero-band">
       <div class="container">
         <div>
-          <div class="page-title-row"><h1 class="page-title has-dot">Share your idea</h1></div>
-          <p class="page-subtitle">Got an action in mind? Drop it here — the team reads every one.</p>
+          <div class="page-title-row"><h1 class="page-title has-dot">{{ i18n.t('propose.title') }}</h1></div>
+          <p class="page-subtitle">{{ i18n.t('propose.subtitle') }}</p>
         </div>
       </div>
     </section>
 
     <div class="container" style="padding: 32px 0 64px;">
       <div class="grid-12">
-        <!-- Left: form -->
         <div class="col-main">
           <form class="card" (ngSubmit)="submit()" #f="ngForm" style="padding: 24px 26px;">
 
@@ -31,8 +31,8 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
               <div class="banner banner--success" role="status" style="margin-bottom: 20px;">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 <div class="banner__body">
-                  <strong>Thanks — your idea is in.</strong>
-                  We'll let you know the moment it's reviewed.
+                  <strong>{{ i18n.t('propose.success.head') }}</strong>
+                  {{ i18n.t('propose.success.body') }}
                 </div>
               </div>
             }
@@ -43,42 +43,42 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
               </div>
             }
 
-            <h2 class="card-title" style="margin-bottom: 18px; font-size: 1.125rem;">Your idea</h2>
+            <h2 class="card-title" style="margin-bottom: 18px; font-size: 1.125rem;">{{ i18n.t('propose.card.title') }}</h2>
 
             <div class="field">
-              <label class="field__label" for="idea-title">Short title</label>
+              <label class="field__label" for="idea-title">{{ i18n.t('propose.field.title.label') }}</label>
               <input class="input" id="idea-title" name="title" type="text"
-                     placeholder="e.g. CV workshops for people re-entering the workforce"
+                     [placeholder]="i18n.t('propose.field.title.placeholder')"
                      [(ngModel)]="title" required maxlength="200" />
-              <p class="field__hint">One line, no jargon.</p>
+              <p class="field__hint">{{ i18n.t('propose.field.title.hint') }}</p>
             </div>
 
             <div class="field" style="margin-top: 18px;">
-              <label class="field__label" for="idea-desc">What would it involve?</label>
+              <label class="field__label" for="idea-desc">{{ i18n.t('propose.field.desc.label') }}</label>
               <textarea class="textarea" id="idea-desc" name="description" rows="5"
-                        placeholder="What would participants do? Who benefits? Roughly how many hours? Anything we should know about the NGO?"
+                        [placeholder]="i18n.t('propose.field.desc.placeholder')"
                         [(ngModel)]="description"></textarea>
             </div>
 
             <div class="field" style="margin-top: 18px;">
-              <label class="field__label">Cover image (optional)</label>
+              <label class="field__label">{{ i18n.t('propose.field.cover.label') }}</label>
               <app-image-picker [value]="imageUrl" (valueChange)="imageUrl = $event" />
-              <p class="field__hint">A photo of the cause, the place, or the NGO helps reviewers picture your idea.</p>
+              <p class="field__hint">{{ i18n.t('propose.field.cover.hint') }}</p>
             </div>
 
             <div class="form-actions">
-              <a class="btn btn--ghost" routerLink="/actions">Cancel</a>
+              <a class="btn btn--ghost" routerLink="/actions">{{ i18n.t('common.cancel') }}</a>
               <button class="btn btn--yellow" type="submit"
                       [disabled]="submitting() || f.invalid"
                       [class.btn--loading]="submitting()">
-                Submit idea
+                {{ i18n.t('propose.submit') }}
               </button>
             </div>
           </form>
 
           @if (mine().length > 0) {
-            <section class="submitted-strip card" aria-label="Your ideas">
-              <h3 class="card-title" style="margin-bottom: 16px;">Your recent ideas</h3>
+            <section class="submitted-strip card">
+              <h3 class="card-title" style="margin-bottom: 16px;">{{ i18n.t('propose.mine.title') }}</h3>
               <div class="stack-3">
                 @for (p of mine(); track p.id) {
                   <div class="mine-row">
@@ -91,14 +91,14 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
                       <div class="stack-2" style="min-width: 0;">
                         <span class="mine-row__title">{{ p.title }}</span>
                         <span class="muted" style="font-size: 0.8125rem;">
-                          Submitted {{ p.createdAt | date:'MMM d' }}
+                          {{ i18n.t('propose.mine.submitted', { date: (p.createdAt | date:'MMM d':'':i18n.locale()) || '' }) }}
                         </span>
                       </div>
                     </div>
                     @switch (p.status) {
-                      @case ('PENDING')  { <span class="pill pill--pending"><span class="dot"></span>In review</span> }
-                      @case ('ACCEPTED') { <span class="pill pill--accepted"><span class="dot"></span>Accepted</span> }
-                      @case ('REJECTED') { <span class="pill pill--rejected"><span class="dot"></span>Not retained</span> }
+                      @case ('PENDING')  { <span class="pill pill--pending"><span class="dot"></span>{{ i18n.t('propose.pill.pending') }}</span> }
+                      @case ('ACCEPTED') { <span class="pill pill--accepted"><span class="dot"></span>{{ i18n.t('propose.pill.accepted') }}</span> }
+                      @case ('REJECTED') { <span class="pill pill--rejected"><span class="dot"></span>{{ i18n.t('propose.pill.rejected') }}</span> }
                     }
                   </div>
                 }
@@ -107,31 +107,30 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
           }
         </div>
 
-        <!-- Right: how it works -->
         <aside class="col-rail">
           <div class="card" style="padding: 22px 24px;">
-            <p class="t-xs muted" style="margin-bottom: 8px;">How proposals work</p>
-            <h3 class="card-title" style="margin-bottom: 16px;">From idea to action</h3>
+            <p class="t-xs muted" style="margin-bottom: 8px;">{{ i18n.t('propose.how.eyebrow') }}</p>
+            <h3 class="card-title" style="margin-bottom: 16px;">{{ i18n.t('propose.how.title') }}</h3>
             <ol class="how-list">
               <li>
                 <span class="how-num">1</span>
                 <div>
-                  <strong>Submit your idea.</strong>
-                  <p class="muted">Title and a few lines on what you're imagining.</p>
+                  <strong>{{ i18n.t('propose.how.step1.title') }}</strong>
+                  <p class="muted">{{ i18n.t('propose.how.step1.body') }}</p>
                 </div>
               </li>
               <li>
                 <span class="how-num">2</span>
                 <div>
-                  <strong>Admin team reviews.</strong>
-                  <p class="muted">Usually within a week. You'll be notified either way.</p>
+                  <strong>{{ i18n.t('propose.how.step2.title') }}</strong>
+                  <p class="muted">{{ i18n.t('propose.how.step2.body') }}</p>
                 </div>
               </li>
               <li>
                 <span class="how-num">3</span>
                 <div>
-                  <strong>It becomes a real action.</strong>
-                  <p class="muted">Approved ideas show up on the actions page for everyone.</p>
+                  <strong>{{ i18n.t('propose.how.step3.title') }}</strong>
+                  <p class="muted">{{ i18n.t('propose.how.step3.body') }}</p>
                 </div>
               </li>
             </ol>
@@ -139,8 +138,8 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
 
           <div class="card" style="padding: 22px 24px; margin-top: 16px; background: var(--surface-2);">
             <p class="muted" style="font-size: 0.875rem; line-height: 1.55; margin: 0;">
-              <strong style="color: var(--ink);">Pro tip.</strong>
-              Concrete proposals (named NGO, rough date, specific format) move faster than vague ones.
+              <strong style="color: var(--ink);">{{ i18n.t('propose.tip.head') }}</strong>
+              {{ i18n.t('propose.tip.body') }}
             </p>
           </div>
         </aside>
@@ -193,6 +192,7 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
   `]
 })
 export class ProposeComponent implements OnInit, OnDestroy {
+  readonly i18n = inject(I18nService);
   private api = inject(ProposalsService);
   private router = inject(Router);
   private events = inject(EventsService);
@@ -245,7 +245,7 @@ export class ProposeComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.submitting.set(false);
-        this.error.set(err?.error?.message ?? 'Could not submit idea.');
+        this.error.set(err?.error?.message ?? this.i18n.t('propose.err.generic'));
       }
     });
   }

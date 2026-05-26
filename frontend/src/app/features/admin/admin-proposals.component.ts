@@ -4,6 +4,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { Proposal, ProposalStatus, ProposalsService } from '../../core/proposals.service';
 import { EventsService } from '../../core/events.service';
+import { I18nService } from '../../core/i18n.service';
 
 type Filter = 'all' | ProposalStatus;
 
@@ -14,9 +15,9 @@ type Filter = 'all' | ProposalStatus;
   template: `
     <div class="subnav">
       <div class="container">
-        <a class="tab" routerLink="/admin/actions" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: false }">Actions</a>
+        <a class="tab" routerLink="/admin/actions" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: false }">{{ i18n.t('admin.subnav.actions') }}</a>
         <a class="tab" routerLink="/admin/proposals" routerLinkActive="is-active">
-          Proposals
+          {{ i18n.t('admin.subnav.proposals') }}
           @if (countOf('PENDING') > 0) {
             <span class="badge">{{ countOf('PENDING') }}</span>
           }
@@ -27,23 +28,23 @@ type Filter = 'all' | ProposalStatus;
     <div class="container container--narrow" style="padding: 32px 0 64px;">
       <div class="admin-head">
         <div>
-          <div class="page-title-row"><h1 class="page-title has-dot">Ideas inbox</h1></div>
-          <p class="page-subtitle">Action ideas submitted by colleagues.</p>
+          <div class="page-title-row"><h1 class="page-title has-dot">{{ i18n.t('adminProp.title') }}</h1></div>
+          <p class="page-subtitle">{{ i18n.t('adminProp.subtitle') }}</p>
         </div>
       </div>
 
-      <nav class="tabs" aria-label="Filter proposals">
+      <nav class="tabs" [attr.aria-label]="i18n.t('adminProp.tabs.aria')">
         <button class="tab" type="button" [class.is-active]="filter() === 'all'" (click)="filter.set('all')">
-          All <span class="badge">{{ proposals().length }}</span>
+          {{ i18n.t('adminProp.tabs.all') }} <span class="badge">{{ proposals().length }}</span>
         </button>
         <button class="tab" type="button" [class.is-active]="filter() === 'PENDING'" (click)="filter.set('PENDING')">
-          Pending <span class="badge">{{ countOf('PENDING') }}</span>
+          {{ i18n.t('adminProp.tabs.pending') }} <span class="badge">{{ countOf('PENDING') }}</span>
         </button>
         <button class="tab" type="button" [class.is-active]="filter() === 'ACCEPTED'" (click)="filter.set('ACCEPTED')">
-          Accepted <span class="badge">{{ countOf('ACCEPTED') }}</span>
+          {{ i18n.t('adminProp.tabs.accepted') }} <span class="badge">{{ countOf('ACCEPTED') }}</span>
         </button>
         <button class="tab" type="button" [class.is-active]="filter() === 'REJECTED'" (click)="filter.set('REJECTED')">
-          Rejected <span class="badge">{{ countOf('REJECTED') }}</span>
+          {{ i18n.t('adminProp.tabs.rejected') }} <span class="badge">{{ countOf('REJECTED') }}</span>
         </button>
       </nav>
 
@@ -71,11 +72,11 @@ type Filter = 'all' | ProposalStatus;
               </g>
               <path d="M180 100 C 200 110, 210 130, 195 150 C 210 145, 215 130, 200 110 Z" fill="#F4E443"/>
             </svg>
-            <h3>No ideas waiting</h3>
-            <p>You're all caught up. New ideas will appear here automatically.</p>
+            <h3>{{ i18n.t('adminProp.empty.pending.title') }}</h3>
+            <p>{{ i18n.t('adminProp.empty.pending.body') }}</p>
           } @else {
-            <h3>No ideas in this view</h3>
-            <p>Try a different filter or check back later.</p>
+            <h3>{{ i18n.t('adminProp.empty.other.title') }}</h3>
+            <p>{{ i18n.t('adminProp.empty.other.body') }}</p>
           }
         </div>
       } @else {
@@ -90,14 +91,14 @@ type Filter = 'all' | ProposalStatus;
                   <div>
                     <h3 class="card-title">{{ p.title }}</h3>
                     <p class="muted" style="font-size: 0.875rem; margin-top: 4px;">
-                      Submitted by <strong style="color:var(--ink); font-weight:600;">{{ p.authorEmail }}</strong>
-                      on {{ p.createdAt | date:'MMM d, y' }}
+                      {{ i18n.t('adminProp.card.submittedBy') }} <strong style="color:var(--ink); font-weight:600;">{{ p.authorEmail }}</strong>
+                      {{ i18n.t('adminProp.card.on', { date: (p.createdAt | date:'MMM d, y':'':i18n.locale()) || '' }) }}
                     </p>
                   </div>
                   @switch (p.status) {
-                    @case ('PENDING')  { <span class="pill pill--pending"><span class="dot"></span>Pending</span> }
-                    @case ('ACCEPTED') { <span class="pill pill--accepted"><span class="dot"></span>Accepted</span> }
-                    @case ('REJECTED') { <span class="pill pill--rejected"><span class="dot"></span>Rejected</span> }
+                    @case ('PENDING')  { <span class="pill pill--pending"><span class="dot"></span>{{ i18n.t('adminProp.pill.pending') }}</span> }
+                    @case ('ACCEPTED') { <span class="pill pill--accepted"><span class="dot"></span>{{ i18n.t('adminProp.pill.accepted') }}</span> }
+                    @case ('REJECTED') { <span class="pill pill--rejected"><span class="dot"></span>{{ i18n.t('adminProp.pill.rejected') }}</span> }
                   }
                 </div>
 
@@ -110,14 +111,14 @@ type Filter = 'all' | ProposalStatus;
                     <button class="btn btn--danger-ghost btn--sm" type="button"
                             [disabled]="busy() === p.id"
                             (click)="setStatus(p, 'REJECTED')">
-                      Reject
+                      {{ i18n.t('adminProp.btn.reject') }}
                     </button>
                   }
                   @if (p.status !== 'PENDING') {
                     <button class="btn btn--secondary btn--sm" type="button"
                             [disabled]="busy() === p.id"
                             (click)="setStatus(p, 'PENDING')">
-                      Mark as pending
+                      {{ i18n.t('adminProp.btn.pending') }}
                     </button>
                   }
                   @if (p.status !== 'ACCEPTED') {
@@ -125,7 +126,7 @@ type Filter = 'all' | ProposalStatus;
                             [disabled]="busy() === p.id"
                             [class.btn--loading]="busy() === p.id"
                             (click)="setStatus(p, 'ACCEPTED')">
-                      Accept
+                      {{ i18n.t('adminProp.btn.accept') }}
                     </button>
                   }
                 </div>
@@ -180,6 +181,7 @@ type Filter = 'all' | ProposalStatus;
   `]
 })
 export class AdminProposalsComponent implements OnInit, OnDestroy {
+  readonly i18n = inject(I18nService);
   private api = inject(ProposalsService);
   private events = inject(EventsService);
 

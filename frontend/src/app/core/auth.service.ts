@@ -50,6 +50,17 @@ export class AuthService {
       );
   }
 
+  signup(email: string, password: string): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>(`${environment.apiUrl}/auth/signup`, { email, password })
+      .pipe(
+        tap((res) => {
+          localStorage.setItem(TOKEN_KEY, res.token);
+          this.token.set(res.token);
+        })
+      );
+  }
+
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     this.token.set(null);

@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 import { FilesService } from '../core/files.service';
+import { I18nService } from '../core/i18n.service';
 
 /**
  * Like the image picker but accepts <b>both</b> images and short videos,
@@ -32,11 +33,11 @@ import { FilesService } from '../core/files.service';
       <div class="picker__tabs" role="tablist">
         <button type="button" role="tab" [attr.aria-pressed]="mode() === 'upload'"
                 (click)="setMode('upload')">
-          <i class="pi pi-upload"></i> Upload
+          <i class="pi pi-upload"></i> {{ i18n.t('media.tab.upload') }}
         </button>
         <button type="button" role="tab" [attr.aria-pressed]="mode() === 'url'"
                 (click)="setMode('url')">
-          <i class="pi pi-link"></i> Paste URL or YouTube link
+          <i class="pi pi-link"></i> {{ i18n.t('media.tab.url') }}
         </button>
       </div>
 
@@ -49,23 +50,23 @@ import { FilesService } from '../core/files.service';
           @if (uploading()) {
             <div class="dropzone__msg">
               <span class="spin"></span>
-              <span>Uploading… {{ progressPercent() }}%</span>
+              <span>{{ i18n.t('pick.upload.uploading', { n: progressPercent() }) }}</span>
             </div>
           } @else {
             <div class="dropzone__msg">
               <i class="pi pi-image" style="font-size: 22px;"></i>
-              <span>Drop a file here, or <button type="button" class="link" (click)="fileInput.click()">browse</button></span>
-              <span class="dropzone__hint">Images up to 5 MB · Videos up to 20 MB</span>
+              <span>{{ i18n.t('pick.upload.dropOr') }} <button type="button" class="link" (click)="fileInput.click()">{{ i18n.t('pick.upload.browse') }}</button></span>
+              <span class="dropzone__hint">{{ i18n.t('media.upload.hint') }}</span>
             </div>
           }
         </label>
       } @else {
         <input class="input" type="url" name="mediaUrl"
-               placeholder="https://… or a YouTube/Vimeo link"
+               [placeholder]="i18n.t('media.url.placeholder')"
                [ngModel]="value?.url ?? ''"
                (ngModelChange)="onUrlChange($event)" />
         <p class="hint">
-          Paste an image/video URL, or a YouTube/Vimeo link — we'll embed it inline.
+          {{ i18n.t('media.url.help') }}
         </p>
       }
 
@@ -82,9 +83,9 @@ import { FilesService } from '../core/files.service';
           } @else if (value!.kind === 'video') {
             <video [src]="value!.url" controls (error)="onMediaError()"></video>
           } @else {
-            <img [src]="value!.url" alt="Preview" (error)="onMediaError()" />
+            <img [src]="value!.url" alt="" (error)="onMediaError()" />
           }
-          <button type="button" class="preview__remove" (click)="clear()" aria-label="Remove media">
+          <button type="button" class="preview__remove" (click)="clear()" [attr.aria-label]="i18n.t('media.preview.remove.aria')">
             <i class="pi pi-times"></i>
           </button>
         </div>
@@ -215,6 +216,7 @@ import { FilesService } from '../core/files.service';
   `]
 })
 export class MediaPickerComponent {
+  readonly i18n = inject(I18nService);
   private files = inject(FilesService);
   private sanitizer = inject(DomSanitizer);
 
@@ -259,7 +261,7 @@ export class MediaPickerComponent {
   }
 
   onMediaError(): void {
-    this.errorMsg.set("Couldn't load this media — check the URL or try uploading instead.");
+    this.errorMsg.set(this.i18n.t('media.err.mediaLoad'));
   }
 
   clear(): void {
@@ -291,12 +293,12 @@ export class MediaPickerComponent {
     const isImage = /^image\/(jpeg|png|webp|gif)$/.test(file.type);
     const isVideo = /^video\/(mp4|webm|quicktime)$/.test(file.type);
     if (!isImage && !isVideo) {
-      this.errorMsg.set('Only JPEG/PNG/WebP/GIF images and MP4/WebM/MOV videos are accepted.');
+      this.errorMsg.set(this.i18n.t('media.err.format'));
       return;
     }
     const cap = isImage ? 5 : 20;
     if (file.size > cap * 1024 * 1024) {
-      this.errorMsg.set(`File too large — ${isImage ? 'images' : 'videos'} are capped at ${cap} MB.`);
+      this.errorMsg.set(this.i18n.t(isImage ? 'media.err.tooLargeImage' : 'media.err.tooLargeVideo', { cap }));
       return;
     }
     this.uploading.set(true);
@@ -313,7 +315,7 @@ export class MediaPickerComponent {
       },
       error: (err) => {
         this.uploading.set(false);
-        this.errorMsg.set(err?.error?.message ?? 'Upload failed. Try again.');
+        this.errorMsg.set(err?.error?.message ?? this.i18n.t('pick.err.upload'));
       },
     });
   }

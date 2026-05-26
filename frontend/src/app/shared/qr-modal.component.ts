@@ -5,9 +5,12 @@ import {
   OnChanges,
   Output,
   SimpleChanges,
+  inject,
   signal,
 } from '@angular/core';
 import QRCode from 'qrcode';
+
+import { I18nService } from '../core/i18n.service';
 
 @Component({
   selector: 'app-qr-modal',
@@ -17,8 +20,8 @@ import QRCode from 'qrcode';
       <div class="modal-backdrop" (click)="closeBackdrop($event)">
         <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="qr-title">
           <header class="modal__header">
-            <h2 class="modal__title" id="qr-title">Share this action</h2>
-            <button type="button" class="modal__close" (click)="close()" aria-label="Close">
+            <h2 class="modal__title" id="qr-title">{{ i18n.t('qr.title') }}</h2>
+            <button type="button" class="modal__close" (click)="close()" [attr.aria-label]="i18n.t('common.close')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </header>
@@ -30,19 +33,19 @@ import QRCode from 'qrcode';
 
             @if (qrDataUrl()) {
               <div class="qr-frame">
-                <img [src]="qrDataUrl()" alt="QR code linking to this action" />
+                <img [src]="qrDataUrl()" [alt]="i18n.t('qr.aria.qr')" />
               </div>
             } @else {
-              <div class="qr-frame qr-frame--loading">Generating…</div>
+              <div class="qr-frame qr-frame--loading">{{ i18n.t('qr.generating') }}</div>
             }
 
-            <div class="qr-url" role="group" aria-label="Action URL">
+            <div class="qr-url" role="group" [attr.aria-label]="i18n.t('qr.aria.url')">
               {{ url() }}
             </div>
             @if (copied()) {
               <p class="qr-copied" role="status">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                URL copied
+                {{ i18n.t('qr.copied') }}
               </p>
             }
           </div>
@@ -50,13 +53,13 @@ import QRCode from 'qrcode';
           <div class="modal__footer">
             <button type="button" class="btn btn--secondary" (click)="copyUrl()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              Copy URL
+              {{ i18n.t('qr.copy') }}
             </button>
             <button type="button" class="btn btn--primary"
                     [disabled]="!qrDataUrl()"
                     (click)="download()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Download PNG
+              {{ i18n.t('qr.download') }}
             </button>
           </div>
         </div>
@@ -106,6 +109,8 @@ export class QrModalComponent implements OnChanges {
   @Input() open = false;
 
   @Output() closed = new EventEmitter<void>();
+
+  readonly i18n = inject(I18nService);
 
   readonly qrDataUrl = signal<string | null>(null);
   readonly url = signal<string>('');

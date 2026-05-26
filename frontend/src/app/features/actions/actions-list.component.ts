@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ActionsService, CharityAction } from '../../core/actions.service';
 import { StatsService } from '../../core/stats.service';
 import { EventsService } from '../../core/events.service';
+import { I18nService } from '../../core/i18n.service';
 import { ActionMapComponent } from '../../shared/action-map.component';
 
 type Filter = 'all' | 'open' | 'month';
@@ -21,14 +22,12 @@ const VIEW_MODE_KEY = 'actions.viewMode';
       <div class="container">
         <div>
           <div class="page-title-row">
-            <h1 class="page-title has-dot">Find your action</h1>
+            <h1 class="page-title has-dot">{{ i18n.t('actions.title') }}</h1>
           </div>
-          <p class="page-subtitle">Pick what matters to you. Sign up in two clicks.</p>
+          <p class="page-subtitle">{{ i18n.t('actions.subtitle') }}</p>
         </div>
         @if (engagement(); as e) {
-          <span class="pill--count">
-            <strong>{{ e.distinctParticipants }}</strong>&nbsp;colleagues signed up since Jan {{ seasonYear() }}
-          </span>
+          <span class="pill--count" [innerHTML]="i18n.t('actions.engagement', { count: e.distinctParticipants, year: seasonYear() })"></span>
         }
       </div>
     </section>
@@ -37,36 +36,36 @@ const VIEW_MODE_KEY = 'actions.viewMode';
       <!-- Filter row -->
       <div class="filter-row">
         <div class="filter-row__left">
-          <div class="chip-group" role="tablist" aria-label="Filter actions">
+          <div class="chip-group" role="tablist" [attr.aria-label]="i18n.t('actions.filter.aria')">
             <button class="chip" type="button" role="tab"
                     [class.is-active]="filter() === 'all'"
                     [attr.aria-selected]="filter() === 'all'"
-                    (click)="setFilter('all')">All · {{ actions().length }}</button>
+                    (click)="setFilter('all')">{{ i18n.t('actions.filter.all', { count: actions().length }) }}</button>
             <button class="chip" type="button" role="tab"
                     [class.is-active]="filter() === 'open'"
                     [attr.aria-selected]="filter() === 'open'"
-                    (click)="setFilter('open')">Open · {{ openCount() }}</button>
+                    (click)="setFilter('open')">{{ i18n.t('actions.filter.open', { count: openCount() }) }}</button>
             <button class="chip" type="button" role="tab"
                     [class.is-active]="filter() === 'month'"
                     [attr.aria-selected]="filter() === 'month'"
-                    (click)="setFilter('month')">This month</button>
+                    (click)="setFilter('month')">{{ i18n.t('actions.filter.month') }}</button>
           </div>
         </div>
 
-        <div class="seg" role="tablist" aria-label="View mode">
+        <div class="seg" role="tablist" [attr.aria-label]="i18n.t('actions.view.aria')">
           <button type="button" role="tab"
                   [class.is-active]="view() === 'grid'"
                   [attr.aria-selected]="view() === 'grid'"
                   (click)="setView('grid')">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            Grid
+            {{ i18n.t('actions.view.grid') }}
           </button>
           <button type="button" role="tab"
                   [class.is-active]="view() === 'map'"
                   [attr.aria-selected]="view() === 'map'"
                   (click)="setView('map')">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 8 3 16 6 23 3 23 18 16 21 8 18 1 21"/><line x1="8" y1="3" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="21"/></svg>
-            Map
+            {{ i18n.t('actions.view.map') }}
             @if (mapPinCount() > 0) {
               <span class="seg__count">{{ mapPinCount() }}</span>
             }
@@ -99,15 +98,15 @@ const VIEW_MODE_KEY = 'actions.viewMode';
               <path d="M120 60 C 90 60 70 80 70 110 C 70 140 120 180 120 180 C 120 180 170 140 170 110 C 170 80 150 60 120 60 Z" fill="#2C3A66"/>
               <circle cx="120" cy="105" r="14" fill="#F4E443"/>
             </svg>
-            <h3>No pinned actions yet</h3>
-            <p>Admins need to set a location on actions before they show up on the map. Switch back to Grid to see all actions.</p>
+            <h3>{{ i18n.t('actions.empty.map.title') }}</h3>
+            <p>{{ i18n.t('actions.empty.map.body') }}</p>
           </div>
         } @else {
           <app-action-map [actions]="filtered()" [height]="560" />
           @if (mapPinCount() < filtered().length) {
             <p class="map-hint">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              Showing {{ mapPinCount() }} of {{ filtered().length }} — the rest have no coordinates yet.
+              {{ i18n.t('actions.map.hint', { shown: mapPinCount(), total: filtered().length }) }}
             </p>
           }
         }
@@ -126,8 +125,8 @@ const VIEW_MODE_KEY = 'actions.viewMode';
             <circle cx="90" cy="92" r="14" fill="#2C3A66"/>
             <circle cx="150" cy="92" r="14" fill="#3A4A7E"/>
           </svg>
-          <h3>No actions match this filter</h3>
-          <p>Try a different filter or come back later — new actions are added throughout the year.</p>
+          <h3>{{ i18n.t('actions.empty.filter.title') }}</h3>
+          <p>{{ i18n.t('actions.empty.filter.body') }}</p>
         </div>
       } @else {
         <div class="actions-grid">
@@ -140,20 +139,19 @@ const VIEW_MODE_KEY = 'actions.viewMode';
                   <span class="cover-tile"></span>
                   <span class="cover-decor"></span>
                 }
-                <!-- Status pill (top-right) -->
                 @if (a.isClosed) {
-                  <span class="pill pill--closed"><span class="dot"></span>Closed</span>
+                  <span class="pill pill--closed"><span class="dot"></span>{{ i18n.t('actions.card.closed') }}</span>
                 } @else if (a.seatsRemaining === 0) {
-                  <span class="pill pill--full"><span class="dot"></span>Full</span>
+                  <span class="pill pill--full"><span class="dot"></span>{{ i18n.t('actions.card.full') }}</span>
                 } @else if (a.seatsRemaining <= 3) {
-                  <span class="pill pill--almost">{{ a.seatsRemaining }} seats left</span>
+                  <span class="pill pill--almost">{{ i18n.t('actions.card.seatsLeft', { n: a.seatsRemaining }) }}</span>
                 } @else {
-                  <span class="pill pill--open"><span class="dot"></span>Open</span>
+                  <span class="pill pill--open"><span class="dot"></span>{{ i18n.t('actions.card.open') }}</span>
                 }
                 @if (a.currentUserRegistered) {
                   <span class="pill pill--reg">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    Registered
+                    {{ i18n.t('actions.card.registered') }}
                   </span>
                 }
               </div>
@@ -162,7 +160,7 @@ const VIEW_MODE_KEY = 'actions.viewMode';
                 <div class="action-card__meta">
                   <div class="row">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span>{{ a.actionDate | date:'EEE d MMM' }} · {{ a.actionDate | date:'HH:mm' }}</span>
+                    <span>{{ a.actionDate | date:'EEE d MMM':'':i18n.locale() }} · {{ a.actionDate | date:'HH:mm':'':i18n.locale() }}</span>
                   </div>
                   @if (a.location) {
                     <div class="row">
@@ -173,9 +171,9 @@ const VIEW_MODE_KEY = 'actions.viewMode';
                 </div>
                 <div class="action-card__seats">
                   <span class="action-card__seats-label">
-                    {{ a.registeredCount }} of {{ a.capacity }} seats filled
+                    {{ i18n.t('actions.card.seats', { filled: a.registeredCount, capacity: a.capacity }) }}
                     @if (!a.isClosed && a.seatsRemaining > 0) {
-                      — {{ a.seatsRemaining }} left
+                      {{ i18n.t('actions.card.left', { n: a.seatsRemaining }) }}
                     }
                   </span>
                   <div class="progress" [class.progress--urgent]="isUrgent(a)">
@@ -199,11 +197,11 @@ const VIEW_MODE_KEY = 'actions.viewMode';
     <section class="propose-banner">
       <div class="container">
         <div>
-          <div class="propose-banner__eyebrow">Don't see what you're looking for?</div>
-          <div class="propose-banner__title">Got an action in mind? <span class="accent">Drop it here</span> — we read every one.</div>
+          <div class="propose-banner__eyebrow">{{ i18n.t('actions.banner.eyebrow') }}</div>
+          <div class="propose-banner__title">{{ i18n.t('actions.banner.title.before') }} <span class="accent">{{ i18n.t('actions.banner.title.accent') }}</span>{{ i18n.t('actions.banner.title.after') }}</div>
         </div>
         <a class="btn btn--yellow" routerLink="/propose">
-          Propose an idea
+          {{ i18n.t('actions.banner.cta') }}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </a>
       </div>
@@ -268,6 +266,7 @@ const VIEW_MODE_KEY = 'actions.viewMode';
   `]
 })
 export class ActionsListComponent implements OnInit, OnDestroy {
+  readonly i18n = inject(I18nService);
   private actionsApi = inject(ActionsService);
   private statsApi = inject(StatsService);
   private events = inject(EventsService);

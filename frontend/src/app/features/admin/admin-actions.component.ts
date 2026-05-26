@@ -5,6 +5,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ActionsService, CharityAction } from '../../core/actions.service';
 import { ProposalsService } from '../../core/proposals.service';
 import { EventsService } from '../../core/events.service';
+import { I18nService } from '../../core/i18n.service';
 import { QrModalComponent } from '../../shared/qr-modal.component';
 
 @Component({
@@ -12,12 +13,11 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
   standalone: true,
   imports: [DatePipe, RouterLink, RouterLinkActive, QrModalComponent],
   template: `
-    <!-- Admin sub-nav -->
     <div class="subnav">
       <div class="container">
-        <a class="tab" routerLink="/admin/actions" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: false }">Actions</a>
+        <a class="tab" routerLink="/admin/actions" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: false }">{{ i18n.t('admin.subnav.actions') }}</a>
         <a class="tab" routerLink="/admin/proposals" routerLinkActive="is-active">
-          Proposals
+          {{ i18n.t('admin.subnav.proposals') }}
           @if (pendingProposals() > 0) {
             <span class="badge">{{ pendingProposals() }}</span>
           }
@@ -28,38 +28,37 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
     <div class="container" style="padding: 32px 0 64px;">
       <div class="admin-head">
         <div>
-          <div class="page-title-row"><h1 class="page-title has-dot">Actions</h1></div>
-          <p class="page-subtitle">Manage all volunteer actions for the 2026 edition.</p>
+          <div class="page-title-row"><h1 class="page-title has-dot">{{ i18n.t('admin.actions.title') }}</h1></div>
+          <p class="page-subtitle">{{ i18n.t('admin.actions.subtitle') }}</p>
         </div>
         <div class="row" style="gap: 10px;">
           <a class="btn btn--yellow" routerLink="/admin/actions/new">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New action
+            {{ i18n.t('admin.actions.new') }}
           </a>
         </div>
       </div>
 
-      <!-- KPI row -->
       <div class="kpi-grid">
         <div class="card kpi">
-          <div class="kpi__label">Open actions</div>
+          <div class="kpi__label">{{ i18n.t('admin.kpi.open') }}</div>
           <div class="kpi__num">{{ openCount() }}</div>
-          <div class="muted" style="font-size: 0.8125rem;">{{ closedCount() }} closed</div>
+          <div class="muted" style="font-size: 0.8125rem;">{{ i18n.t('admin.kpi.closed', { n: closedCount() }) }}</div>
         </div>
         <div class="card kpi">
-          <div class="kpi__label">Total registrations</div>
+          <div class="kpi__label">{{ i18n.t('admin.kpi.totalReg') }}</div>
           <div class="kpi__num">{{ totalReg() }}</div>
-          <div class="muted" style="font-size: 0.8125rem;">across {{ actions().length }} actions</div>
+          <div class="muted" style="font-size: 0.8125rem;">{{ i18n.t('admin.kpi.across', { n: actions().length }) }}</div>
         </div>
         <div class="card kpi">
-          <div class="kpi__label">Fill rate</div>
+          <div class="kpi__label">{{ i18n.t('admin.kpi.fillRate') }}</div>
           <div class="kpi__num">{{ fillRate() }}%</div>
-          <div class="muted" style="font-size: 0.8125rem;">avg across all actions</div>
+          <div class="muted" style="font-size: 0.8125rem;">{{ i18n.t('admin.kpi.fillRate.sub') }}</div>
         </div>
         <div class="card kpi">
-          <div class="kpi__label">Ideas pending</div>
+          <div class="kpi__label">{{ i18n.t('admin.kpi.pending') }}</div>
           <div class="kpi__num">{{ pendingProposals() }}</div>
-          <div class="muted" style="font-size: 0.8125rem;">submitted this season</div>
+          <div class="muted" style="font-size: 0.8125rem;">{{ i18n.t('admin.kpi.pending.sub') }}</div>
         </div>
       </div>
 
@@ -79,23 +78,23 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
             <circle cx="90" cy="92" r="14" fill="#2C3A66"/>
             <circle cx="150" cy="92" r="14" fill="#3A4A7E"/>
           </svg>
-          <h3>No actions yet — start with one</h3>
-          <p>They'll show up here as you create them.</p>
+          <h3>{{ i18n.t('admin.empty.title') }}</h3>
+          <p>{{ i18n.t('admin.empty.body') }}</p>
           <a class="btn btn--yellow" routerLink="/admin/actions/new" style="margin-top: 8px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New action
+            {{ i18n.t('admin.actions.new') }}
           </a>
         </div>
       } @else {
         <div class="table-wrap">
-          <table class="table" aria-label="Volunteer actions">
+          <table class="table" [attr.aria-label]="i18n.t('admin.table.aria')">
             <thead>
               <tr>
-                <th>Action</th>
-                <th>Date</th>
-                <th>Location</th>
-                <th>Status</th>
-                <th>Fill</th>
+                <th>{{ i18n.t('admin.table.action') }}</th>
+                <th>{{ i18n.t('admin.table.date') }}</th>
+                <th>{{ i18n.t('admin.table.location') }}</th>
+                <th>{{ i18n.t('admin.table.status') }}</th>
+                <th>{{ i18n.t('admin.table.fill') }}</th>
                 <th>&nbsp;</th>
               </tr>
             </thead>
@@ -111,19 +110,19 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
                     </a>
                   </td>
                   <td>
-                    <span class="cell-title">{{ a.actionDate | date:'EEE, MMM d' }}</span><br>
-                    <span class="cell-sub">{{ a.actionDate | date:'HH:mm' }}</span>
+                    <span class="cell-title">{{ a.actionDate | date:'EEE, MMM d':'':i18n.locale() }}</span><br>
+                    <span class="cell-sub">{{ a.actionDate | date:'HH:mm':'':i18n.locale() }}</span>
                   </td>
                   <td>{{ a.location || '—' }}</td>
                   <td>
                     @if (a.isClosed) {
-                      <span class="pill pill--closed"><span class="dot"></span>Closed</span>
+                      <span class="pill pill--closed"><span class="dot"></span>{{ i18n.t('admin.pill.closed') }}</span>
                     } @else if (a.seatsRemaining === 0) {
-                      <span class="pill pill--full"><span class="dot"></span>Full</span>
+                      <span class="pill pill--full"><span class="dot"></span>{{ i18n.t('admin.pill.full') }}</span>
                     } @else if (a.seatsRemaining <= 3) {
-                      <span class="pill pill--almost">{{ a.seatsRemaining }} left</span>
+                      <span class="pill pill--almost">{{ i18n.t('admin.pill.left', { n: a.seatsRemaining }) }}</span>
                     } @else {
-                      <span class="pill pill--open"><span class="dot"></span>Open</span>
+                      <span class="pill pill--open"><span class="dot"></span>{{ i18n.t('admin.pill.open') }}</span>
                     }
                   </td>
                   <td>
@@ -136,21 +135,21 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
                   </td>
                   <td>
                     <div class="row-actions">
-                      <button class="btn btn--icon btn--ghost" type="button" aria-label="Share with QR" title="Share with QR" (click)="openQr(a)">
+                      <button class="btn btn--icon btn--ghost" type="button" [attr.aria-label]="i18n.t('admin.table.shareQr')" [title]="i18n.t('admin.table.shareQr')" (click)="openQr(a)">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="18" y1="14" x2="18" y2="18"/><line x1="14" y1="18" x2="21" y2="18"/></svg>
                       </button>
                       <span class="sep"></span>
-                      <a class="btn btn--icon btn--ghost" [routerLink]="['/admin/actions', a.id, 'edit']" aria-label="Edit" title="Edit">
+                      <a class="btn btn--icon btn--ghost" [routerLink]="['/admin/actions', a.id, 'edit']" [attr.aria-label]="i18n.t('admin.table.edit')" [title]="i18n.t('admin.table.edit')">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                       </a>
                       <span class="sep"></span>
-                      <button class="btn btn--icon btn--ghost" type="button" aria-label="Duplicate" title="Duplicate"
+                      <button class="btn btn--icon btn--ghost" type="button" [attr.aria-label]="i18n.t('admin.table.duplicate')" [title]="i18n.t('admin.table.duplicate')"
                               [disabled]="busy() === a.id" (click)="duplicate(a.id)">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                       </button>
                       @if (!a.isClosed) {
                         <span class="sep"></span>
-                        <button class="btn btn--icon btn--ghost" type="button" aria-label="Close" title="Close"
+                        <button class="btn btn--icon btn--ghost" type="button" [attr.aria-label]="i18n.t('admin.table.close')" [title]="i18n.t('admin.table.close')"
                                 [disabled]="busy() === a.id" (click)="close(a.id)">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         </button>
@@ -203,6 +202,7 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
   `]
 })
 export class AdminActionsComponent implements OnInit, OnDestroy {
+  readonly i18n = inject(I18nService);
   private actionsApi = inject(ActionsService);
   private proposalsApi = inject(ProposalsService);
   private events = inject(EventsService);
