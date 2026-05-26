@@ -1,5 +1,24 @@
 # starter — Quarkus + Angular + LangChain4j
 
+> ## 🚀 Live demo
+>
+> **URL:** **https://charity-day-frontend.onrender.com**
+>
+> Hébergé sur Render (tier gratuit). Le backend s'endort après 15 min
+> d'inactivité, donc la première page peut mettre ~30 s à répondre — c'est
+> normal, ensuite tout est fluide.
+>
+> **Comptes de démo:**
+>
+> | Email          | Mot de passe | Rôles            |
+> | -------------- | ------------ | ---------------- |
+> | `admin@local`  | `admin`      | `ADMIN`, `USER`  |
+> | `user@local`   | `user`       | `USER`           |
+>
+> Ou créez un compte via le bouton **Créer un compte** sur l'écran de login.
+> Toggle **FR / EN** en haut à droite. Voir [DEPLOY.md](DEPLOY.md) pour
+> redéployer ou rolling back.
+
 Kit de démarrage hackathon : backend Java 17 / Quarkus 3.28, frontend
 Angular 20 standalone, auth JWT avec RBAC, assistant IA persistant via
 LangChain4j, CRUD de démo, le tout orchestré par docker compose avec
