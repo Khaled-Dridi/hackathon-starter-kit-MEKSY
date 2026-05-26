@@ -81,15 +81,18 @@ services:
     buildCommand: cd frontend && npm ci --no-audit --no-fund && npm run build:render
     staticPublishPath: ./frontend/dist/starter-frontend/browser
     envVars:
-      # API_URL is injected into environment.prod.ts at build time. The
-      # `host` property gives the backend's public hostname (e.g.
-      # `charity-day-backend.onrender.com`); the prebuild script prepends
-      # https:// automatically.
+      # API_URL is injected into environment.prod.ts at build time.
+      # NOTE: `fromService.property: host` returns only the service name on
+      # Render (not the full *.onrender.com hostname), so we can't resolve
+      # the backend URL automatically. Paste the full backend URL manually
+      # in the Render dashboard after first deploy:
+      #   1. Open charity-day-backend → copy the URL at the top
+      #      (e.g. https://charity-day-backend-xxxx.onrender.com)
+      #   2. Open this service → Environment → set API_URL to that value
+      #   3. Manual Deploy → Deploy latest commit (env var change alone
+      #      doesn't help — API_URL is baked at build time)
       - key: API_URL
-        fromService:
-          type: web
-          name: charity-day-backend
-          property: host
+        sync: false
     # SPA routing — every unknown path serves index.html so Angular's
     # router can take over (e.g. deep-linking to /actions/42 works).
     routes:
