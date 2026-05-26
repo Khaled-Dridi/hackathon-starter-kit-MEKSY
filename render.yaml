@@ -78,7 +78,7 @@ services:
     name: charity-day-frontend
     runtime: static
     plan: free
-    region: frankfurt
+    # Static sites are CDN-served globally — Render rejects a region here.
     buildCommand: cd frontend && npm ci --no-audit --no-fund && npm run build:render
     staticPublishPath: ./frontend/dist/starter-frontend/browser
     envVars:
