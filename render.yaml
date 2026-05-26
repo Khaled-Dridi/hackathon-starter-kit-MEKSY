@@ -1,0 +1,106 @@
+# Render Blueprint for the Charity Day platform.
+#
+# Spins up three resources on Render's free tier:
+#   1. Postgres database  (free for 90 days)
+#   2. Quarkus backend    (Docker web service, sleeps after 15min idle)
+#   3. Angular frontend   (Static site on CDN, always-on)
+#
+# After importing this file via Render → New → Blueprint, you only need to
+# paste your OPENAI_API_KEY (Groq key) into the backend service's
+# Environment tab. Everything else is wired automatically.
+#
+# Estimated first-deploy time: ~10–15 minutes total.
+
+databases:
+  - name: charity-day-db
+    plan: free
+    region: frankfurt
+    databaseName: charity_day
+    user: charity_day
+
+services:
+  # ───────────────────────────────────────────────────────────────────
+  # Backend — Quarkus 3.28 in JVM mode, Docker build
+  # ───────────────────────────────────────────────────────────────────
+  - type: web
+    name: charity-day-backend
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./backend/src/main/docker/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /q/health/ready
+    envVars:
+      - key: QUARKUS_PROFILE
+        value: prod
+      - key: PORT
+        value: "8080"
+
+      # Postgres connection — pulled from the managed DB above
+      - key: DB_HOST
+        fromDatabase:
+          name: charity-day-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: charity-day-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: charity-day-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: charity-day-db
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: charity-day-db
+          property: password
+
+      # AI assistant — Groq's free tier speaks the OpenAI protocol
+      - key: OPENAI_API_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: OPENAI_CHAT_MODEL
+        value: llama-3.3-70b-versatile
+      # sync:false → user pastes this in the Render dashboard, never to git
+      - key: OPENAI_API_KEY
+        sync: false
+
+      # CORS — start permissive, tighten to the real frontend host once live
+      - key: CORS_ORIGINS
+        value: "*"
+
+  # ───────────────────────────────────────────────────────────────────
+  # Frontend — Angular 20 production build, served as static site
+  # ───────────────────────────────────────────────────────────────────
+  - type: web
+    name: charity-day-frontend
+    runtime: static
+    plan: free
+    region: frankfurt
+    buildCommand: cd frontend && npm ci --no-audit --no-fund && npm run build:render
+    staticPublishPath: ./frontend/dist/starter-frontend/browser
+    envVars:
+      # API_URL is injected into environment.prod.ts at build time. The
+      # `host` property gives the backend's public hostname (e.g.
+      # `charity-day-backend.onrender.com`); the prebuild script prepends
+      # https:// automatically.
+      - key: API_URL
+        fromService:
+          type: web
+          name: charity-day-backend
+          property: host
+    # SPA routing — every unknown path serves index.html so Angular's
+    # router can take over (e.g. deep-linking to /actions/42 works).
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
