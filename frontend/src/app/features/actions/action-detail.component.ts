@@ -155,6 +155,8 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
                 <span class="label">{{ i18n.t('detail.reg.label') }}</span>
                 @if (a.isClosed) {
                   <span class="pill pill--closed"><span class="dot"></span>{{ i18n.t('actions.card.closed') }}</span>
+                } @else if (isPast(a)) {
+                  <span class="pill pill--closed"><span class="dot"></span>{{ i18n.t('actions.card.past') }}</span>
                 } @else if (a.seatsRemaining === 0) {
                   <span class="pill pill--full"><span class="dot"></span>{{ i18n.t('actions.card.full') }}</span>
                 } @else if (a.seatsRemaining <= 3) {
@@ -189,13 +191,17 @@ import { QrModalComponent } from '../../shared/qr-modal.component';
                 </p>
               } @else {
                 <button class="btn btn--yellow btn--lg btn--block" type="button"
-                        [disabled]="busy() || a.isClosed || a.seatsRemaining === 0"
+                        [disabled]="busy() || a.isClosed || isPast(a) || a.seatsRemaining === 0"
                         [class.btn--loading]="busy()"
                         (click)="register(a.id)">
                   {{ i18n.t('detail.reg.signMeUp') }}
                 </button>
                 <p class="registration__meta">
-                  {{ i18n.t('detail.reg.afterSignup') }}
+                  @if (isPast(a)) {
+                    {{ i18n.t('detail.err.alreadyStarted') }}
+                  } @else {
+                    {{ i18n.t('detail.reg.afterSignup') }}
+                  }
                 </p>
               }
 
@@ -449,11 +455,17 @@ export class ActionDetailComponent implements OnInit, OnDestroy {
     const map: Record<string, string> = {
       action_full: this.i18n.t('detail.err.full'),
       action_closed: this.i18n.t('detail.err.closed'),
+      action_already_started: this.i18n.t('detail.err.alreadyStarted'),
       already_registered: this.i18n.t('detail.err.already'),
       already_registered_this_year: this.i18n.t('detail.err.alreadyYear'),
       not_registered: this.i18n.t('detail.err.notReg'),
     };
     this.errorMsg.set(map[code] ?? err?.error?.message ?? this.i18n.t('detail.err.generic'));
+  }
+
+  /** True once the action's start time has passed — used to gate the CTA. */
+  isPast(a: CharityAction): boolean {
+    return !!a.actionDate && new Date(a.actionDate).getTime() < Date.now();
   }
 
   fillPercent(a: CharityAction): number {

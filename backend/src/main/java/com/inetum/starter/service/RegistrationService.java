@@ -3,6 +3,7 @@ package com.inetum.starter.service;
 import com.inetum.starter.entity.ActionEntity;
 import com.inetum.starter.entity.RegistrationEntity;
 import com.inetum.starter.events.DomainEvent;
+import com.inetum.starter.exception.ActionAlreadyStartedException;
 import com.inetum.starter.exception.ActionClosedException;
 import com.inetum.starter.exception.ActionFullException;
 import com.inetum.starter.exception.AlreadyRegisteredException;
@@ -17,6 +18,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.jboss.logging.Logger;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -39,6 +41,12 @@ public class RegistrationService {
 
         if (Boolean.TRUE.equals(action.getIsClosed())) {
             throw new ActionClosedException();
+        }
+        // Deadline gate — once the start time has passed, registrations close
+        // automatically. This is separate from the admin-driven isClosed flag
+        // so even un-touched actions stop accepting registrants on their date.
+        if (action.getActionDate() != null && action.getActionDate().isBefore(LocalDateTime.now())) {
+            throw new ActionAlreadyStartedException();
         }
         if (registrationRepository.find(userId, actionId).isPresent()) {
             throw new AlreadyRegisteredException();

@@ -141,6 +141,8 @@ const VIEW_MODE_KEY = 'actions.viewMode';
                 }
                 @if (a.isClosed) {
                   <span class="pill pill--closed"><span class="dot"></span>{{ i18n.t('actions.card.closed') }}</span>
+                } @else if (isPast(a)) {
+                  <span class="pill pill--closed"><span class="dot"></span>{{ i18n.t('actions.card.past') }}</span>
                 } @else if (a.seatsRemaining === 0) {
                   <span class="pill pill--full"><span class="dot"></span>{{ i18n.t('actions.card.full') }}</span>
                 } @else if (a.seatsRemaining <= 3) {
@@ -364,5 +366,10 @@ export class ActionsListComponent implements OnInit, OnDestroy {
 
   isUrgent(a: CharityAction): boolean {
     return this.fillPct(a) >= 75 && !a.isClosed;
+  }
+
+  /** True once the action's start time has passed. */
+  isPast(a: CharityAction): boolean {
+    return !!a.actionDate && new Date(a.actionDate).getTime() < Date.now();
   }
 }

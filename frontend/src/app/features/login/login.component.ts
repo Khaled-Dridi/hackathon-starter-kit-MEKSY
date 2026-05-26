@@ -92,63 +92,33 @@ import { I18nService } from '../../core/i18n.service';
         </p>
       </section>
 
-      <!-- Right: navy brand panel with hand-heart 3D illustration -->
+      <!-- Right: Inetum-themed brand panel — animated squares + echo typography -->
       <aside class="login__brand-side" aria-hidden="true">
-        <div class="login__illustration">
-          <!-- Hand-giving-heart 3D illustration: original, two-tone, ≤30 paths -->
-          <svg viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="6"/>
-              </filter>
-              <linearGradient id="handBase" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#3A4A7E"/>
-                <stop offset="100%" stop-color="#202C50"/>
-              </linearGradient>
-              <linearGradient id="handHi" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#4A5C92"/>
-                <stop offset="100%" stop-color="#2C3A66"/>
-              </linearGradient>
-              <radialGradient id="heartGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#F4E443" stop-opacity="0.6"/>
-                <stop offset="100%" stop-color="#F4E443" stop-opacity="0"/>
-              </radialGradient>
-              <linearGradient id="heart" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#FCEC5C"/>
-                <stop offset="100%" stop-color="#E4D32A"/>
-              </linearGradient>
-            </defs>
-            <ellipse cx="160" cy="130" rx="80" ry="40" fill="url(#heartGlow)"/>
-            <path d="M160 88 C 140 60, 100 64, 100 100 C 100 130, 130 150, 160 168 C 190 150, 220 130, 220 100 C 220 64, 180 60, 160 88 Z"
-                  fill="#C9A227" filter="url(#soft)" opacity="0.4"/>
-            <path d="M160 92 C 142 68, 108 72, 108 102 C 108 128, 134 144, 160 162 C 186 144, 212 128, 212 102 C 212 72, 178 68, 160 92 Z"
-                  fill="url(#heart)"/>
-            <path d="M130 96 C 122 92, 116 100, 120 110 C 124 118, 134 116, 138 108 C 140 102, 136 98, 130 96 Z"
-                  fill="rgba(255,255,255,0.5)"/>
-            <ellipse cx="160" cy="230" rx="90" ry="14" fill="rgba(0,0,0,0.25)" filter="url(#soft)"/>
-            <path d="M80 220 C 80 195, 100 175, 130 175 L 190 175 C 220 175, 240 195, 240 220 L 240 240 C 240 270, 215 285, 185 285 L 135 285 C 105 285, 80 270, 80 240 Z"
-                  fill="url(#handBase)"/>
-            <path d="M100 200 C 110 190, 130 188, 150 192 L 180 192 C 200 188, 220 192, 230 205"
-                  stroke="url(#handHi)" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.6"/>
-            <path d="M105 175 C 105 160, 110 150, 120 150 C 130 150, 135 160, 135 175 Z" fill="url(#handBase)"/>
-            <path d="M140 175 C 140 155, 145 144, 158 144 C 171 144, 176 155, 176 175 Z" fill="url(#handHi)"/>
-            <path d="M180 175 C 180 158, 188 148, 200 148 C 212 148, 217 158, 217 175 Z" fill="url(#handBase)"/>
-            <circle cx="70" cy="100" r="4" fill="#3A4A7E"/>
-            <circle cx="250" cy="80" r="3" fill="#F4E443"/>
-            <circle cx="270" cy="160" r="4" fill="#3A4A7E"/>
-            <circle cx="50" cy="180" r="3" fill="#F4E443"/>
-            <circle cx="240" cy="200" r="3" fill="#3A4A7E"/>
-          </svg>
+        <!-- Inetum wordmark top-right (yellow on navy) -->
+        <div class="brand-side__lockup">
+          <span class="brand-wordmark brand-wordmark--bright">inetum</span>
         </div>
 
-        <div class="login__lead-quote">
-          <p class="login__eyebrow">{{ i18n.t('login.illus.eyebrow') }}</p>
-          <h2>{{ i18n.t('login.illus.title.before') }} <span class="scribble">{{ i18n.t('login.illus.title.scribble') }}</span>.</h2>
-          <p>{{ i18n.t('login.illus.subtitle') }}</p>
+        <!-- Animated yellow tile motif (the Inetum signature) -->
+        <div class="tiles">
+          <span class="tile tile--a"></span>
+          <span class="tile tile--b"></span>
+          <span class="tile tile--c"></span>
+          <span class="tile tile--d"></span>
+          <span class="tile tile--e"></span>
+          <span class="tile tile--f"></span>
         </div>
 
+        <!-- Echo-text headline, banner-style -->
+        <div class="echo">
+          <div class="echo-line" [attr.data-text]="i18n.t('login.echo.line1')">{{ i18n.t('login.echo.line1') }}</div>
+          <div class="echo-line" [attr.data-text]="i18n.t('login.echo.line2')">{{ i18n.t('login.echo.line2') }}</div>
+          <div class="echo-line" [attr.data-text]="i18n.t('login.echo.line3')">{{ i18n.t('login.echo.line3') }}</div>
+        </div>
+
+        <!-- Footer tag -->
         <div class="login__brand-foot">
-          <span>{{ i18n.t('login.illus.foot.brand') }}</span>
+          <span>{{ i18n.t('login.echo.tagline') }}</span>
           <span>{{ i18n.t('login.illus.foot.internal') }}</span>
         </div>
       </aside>
@@ -173,7 +143,8 @@ import { I18nService } from '../../core/i18n.service';
     }
     .brand--dark { color: var(--ink); }
     .brand-wordmark--dark { color: var(--ink); }
-    .brand-wordmark--dark::after { background: var(--accent); box-shadow: 0 0 0 2px rgba(244,228,67,.22); }
+    /* Inetum L-mark stays accent yellow on the white-form side */
+    .brand-wordmark--dark::after { background: var(--accent); }
     .brand-divider--dark { background: var(--line); }
     .brand-app--dark { color: var(--ink); }
 
@@ -220,48 +191,136 @@ import { I18nService } from '../../core/i18n.service';
     }
 
     .login__brand-side {
-      background:
-        radial-gradient(800px 500px at 80% -10%, rgba(244,228,67,.06), transparent 60%),
-        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><g fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.05'><path d='M0 30 H120 M0 60 H120 M0 90 H120'/><path d='M30 0 V120 M60 0 V120 M90 0 V120'/></g></svg>") right center / 240px,
-        linear-gradient(180deg, #232F56 0%, #1C2747 100%);
+      /* Inetum navy — slightly cooler than the global --ink to match the brand book exactly. */
+      background: #262E5A;
       color: #fff;
-      padding: 48px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      padding: 48px 56px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 24px;
       position: relative;
       overflow: hidden;
+      isolation: isolate; /* anchor mix-blend-mode tiles to this layer only */
     }
-    .login__illustration {
-      align-self: center;
-      width: 320px;
-      max-width: 60%;
+
+    /* Wordmark top-right — bright yellow on navy, per brand banner */
+    .brand-side__lockup {
+      position: relative;
+      z-index: 2;
+      justify-self: end;
     }
-    .login__eyebrow {
-      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--accent); margin: 0 0 14px;
+    .brand-wordmark--bright {
+      color: var(--accent);
+      font-family: var(--font-sans);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      font-size: 1.625rem;
+      line-height: 1;
+      text-transform: lowercase;
+      display: inline-flex; align-items: baseline;
     }
-    .login__lead-quote { max-width: 460px; }
-    .login__lead-quote h2 {
-      font-size: 1.875rem; line-height: 1.25; letter-spacing: -0.02em;
-      font-weight: 600; color: #fff; margin: 0 0 16px;
+    /* Override the global ::after so the L-mark stays yellow */
+    .brand-wordmark--bright::after { background: var(--accent); }
+
+    /* ─── Tile motif animation — the Inetum signature ─── */
+    .tiles {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
     }
-    .login__lead-quote h2 .scribble::after { bottom: -4px; }
-    .login__lead-quote p {
-      color: rgba(255,255,255,.7);
-      font-size: 0.9375rem;
-      max-width: 44ch;
+    .tile {
+      position: absolute;
+      display: block;
+      background: var(--accent);
+      /* Multiply over the navy bg produces the brand olive tones in the overlaps —
+         exactly what we see in the logo.png three-square motif. */
+      mix-blend-mode: screen;
+      opacity: 0.92;
+      will-change: transform;
+      box-shadow: 0 0 0 1px rgba(244, 228, 67, 0.05);
+    }
+    /* Six squares of varying sizes, each on its own slow drift cycle so the
+       overlaps shift over time — the panel feels alive but never frantic. */
+    .tile--a { width: 180px; height: 180px; top: 14%; left: 12%; animation: drift-a 22s ease-in-out infinite; }
+    .tile--b { width: 130px; height: 130px; top: 18%; left: 36%; opacity: 0.55; animation: drift-b 26s ease-in-out infinite; }
+    .tile--c { width: 100px; height: 100px; top: 38%; left: 22%; opacity: 0.40; animation: drift-c 30s ease-in-out infinite; }
+    .tile--d { width: 220px; height: 220px; top: 46%; left: 46%; opacity: 0.65; animation: drift-d 28s ease-in-out infinite; }
+    .tile--e { width:  80px; height:  80px; top: 70%; left: 18%; opacity: 0.50; animation: drift-e 24s ease-in-out infinite; }
+    .tile--f { width: 140px; height: 140px; top: 64%; left: 64%; opacity: 0.35; animation: drift-f 32s ease-in-out infinite; }
+
+    /* Each tile drifts on a different orbit and scales subtly — combined,
+       they reshape the L-bracket pattern from the brand book continuously. */
+    @keyframes drift-a {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50%      { transform: translate(36px, -22px) scale(1.04); }
+    }
+    @keyframes drift-b {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50%      { transform: translate(-28px, 18px) scale(0.95); }
+    }
+    @keyframes drift-c {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50%      { transform: translate(22px, 30px) scale(1.08); }
+    }
+    @keyframes drift-d {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50%      { transform: translate(-40px, -28px) scale(0.96); }
+    }
+    @keyframes drift-e {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50%      { transform: translate(30px, -20px) scale(1.10); }
+    }
+    @keyframes drift-f {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50%      { transform: translate(-24px, 22px) scale(1.02); }
+    }
+
+    /* ─── Echo-text headline — banner-style, repeated copies fading down ─── */
+    .echo {
+      position: relative;
+      z-index: 2;
+      align-self: end;
+      justify-self: end;
+      text-align: right;
+      max-width: 100%;
+      padding-right: 4px;
+      pointer-events: none;
+    }
+    .echo-line {
+      position: relative;
+      font-family: var(--font-sans);
+      font-weight: 900;
+      font-size: clamp(2.2rem, 4.6vw, 3.6rem);
+      letter-spacing: -0.02em;
+      line-height: 0.95;
+      color: var(--accent);
+      text-transform: uppercase;
       margin: 0;
-      line-height: 1.55;
     }
+    .echo-line + .echo-line { margin-top: 2px; }
+
+    /* ─── Footer tag ─── */
     .login__brand-foot {
+      position: relative;
+      z-index: 2;
       font-size: 0.75rem;
       color: rgba(255,255,255,.55);
       display: flex;
       justify-content: space-between;
       gap: 16px;
     }
-    .login__brand-foot span:first-child { letter-spacing: -0.02em; font-weight: 600; }
+    .login__brand-foot span:first-child {
+      letter-spacing: -0.02em;
+      font-weight: 600;
+      color: rgba(255,255,255,.8);
+    }
+
+    /* Respect users who don't want motion */
+    @media (prefers-reduced-motion: reduce) {
+      .tile { animation: none !important; }
+    }
 
     .field__hint {
       display: block;

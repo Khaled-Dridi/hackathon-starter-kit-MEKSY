@@ -101,7 +101,9 @@ public class AiResource {
 
     @POST
     @Path("/actions/describe")
-    @jakarta.annotation.security.RolesAllowed("ADMIN")
+    // Open to USER + ADMIN so the propose form ("share your idea") can use
+    // the same draft-from-title helper as the admin action form. The class-
+    // level @RolesAllowed already restricts to logged-in users.
     public RestResponse<GeneratedDescriptionDTO> describeAction(@Valid GenerateDescriptionDTO body) {
         LOG.debugf("AI describe action (title len=%d)", body.getTitle().length());
         String description = assistant.generateActionDescription(body.getTitle());

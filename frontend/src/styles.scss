@@ -226,10 +226,12 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .app-header {
   position: sticky; top: 0; z-index: 1000; /* above Leaflet (max 800) */
   height: var(--header-h);
+  /* Inetum tile motif baked into the right edge — the brand's signature
+     L-shape of overlapping yellow squares, at low opacity so it reads as
+     wallpaper rather than content. */
   background:
-    radial-gradient(120px 80px at 88% 50%, rgba(244,228,67,.06), transparent 70%),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><g fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.06'><path d='M0 30 H120 M0 60 H120 M0 90 H120'/><path d='M30 0 V120 M60 0 V120 M90 0 V120'/></g></svg>") right center / 240px no-repeat,
-    linear-gradient(180deg, #232F56 0%, #1C2747 100%);
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='80' viewBox='0 0 220 80'><g fill='%23F4E443'><rect x='80' y='10' width='32' height='32' opacity='0.10'/><rect x='112' y='10' width='32' height='32' opacity='0.06'/><rect x='112' y='42' width='32' height='32' opacity='0.05'/><rect x='160' y='28' width='24' height='24' opacity='0.07'/></g></svg>") right center / 280px no-repeat,
+    linear-gradient(180deg, #262E5A 0%, #1C2747 100%);
   color: #fff;
   box-shadow: 0 1px 0 rgba(255,255,255,.04), 0 8px 24px -16px rgba(0,0,0,.4);
 }
@@ -250,17 +252,19 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   display: inline-flex;
   align-items: baseline;
 }
+/* Inetum mark — 4 squares: 1 standalone bottom-left + 3 in an L (⌐) top-right.
+   Per the official brand book — see Other important files/logo.png. */
 .brand__word::after,
 .brand-wordmark::after {
   content: "";
   display: inline-block;
-  width: 5px; height: 5px;
-  margin-left: 4px;
-  border-radius: 999px;
+  width: 16px; height: 16px;
+  margin-left: 5px;
   background: var(--accent);
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='0' y='17' width='7' height='7'/><rect x='10' y='0' width='7' height='7'/><rect x='17' y='0' width='7' height='7'/><rect x='17' y='7' width='7' height='7'/></svg>") center / contain no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='0' y='17' width='7' height='7'/><rect x='10' y='0' width='7' height='7'/><rect x='17' y='0' width='7' height='7'/><rect x='17' y='7' width='7' height='7'/></svg>") center / contain no-repeat;
   align-self: flex-end;
-  margin-bottom: 4px;
-  box-shadow: 0 0 0 2px rgba(244,228,67,.18);
+  margin-bottom: 2px;
 }
 .brand-divider { width: 1px; height: 16px; background: var(--ink-3); }
 .brand__app,

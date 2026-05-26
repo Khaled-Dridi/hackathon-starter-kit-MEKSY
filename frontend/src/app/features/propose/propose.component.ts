@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 
 import { Proposal, ProposalsService } from '../../core/proposals.service';
 import { EventsService } from '../../core/events.service';
+import { AiService } from '../../core/ai.service';
 import { I18nService } from '../../core/i18n.service';
 import { ImagePickerComponent } from '../../shared/image-picker.component';
 
@@ -55,9 +56,41 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
 
             <div class="field" style="margin-top: 18px;">
               <label class="field__label" for="idea-desc">{{ i18n.t('propose.field.desc.label') }}</label>
-              <textarea class="textarea" id="idea-desc" name="description" rows="5"
-                        [placeholder]="i18n.t('propose.field.desc.placeholder')"
-                        [(ngModel)]="description"></textarea>
+              <div class="textarea-wrap">
+                <textarea class="textarea" id="idea-desc" name="description" rows="5"
+                          [placeholder]="i18n.t('propose.field.desc.placeholder')"
+                          [(ngModel)]="description"></textarea>
+                <button type="button" class="btn btn--ghost btn--sm ai-btn"
+                        [disabled]="aiBusy() || !title.trim()"
+                        [class.btn--loading]="aiBusy()"
+                        (click)="generate()">
+                  <svg class="sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L13.5 9 L20 10.5 L13.5 12 L12 19 L10.5 12 L4 10.5 L10.5 9 Z"/></svg>
+                  {{ i18n.t('adminForm.ai.cta') }}
+                </button>
+              </div>
+
+              @if (aiError()) {
+                <div class="banner banner--error" role="alert" style="margin-top: 10px;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+                  <div class="banner__body">{{ aiError() }}</div>
+                </div>
+              }
+
+              @if (aiPreview()) {
+                <div class="ai-result" aria-live="polite">
+                  <div class="ai-result__head">
+                    <span>
+                      <svg class="sparkle" viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;color:var(--accent);"><path d="M12 2 L13.5 9 L20 10.5 L13.5 12 L12 19 L10.5 12 L4 10.5 L10.5 9 Z"/></svg>
+                      {{ i18n.t('adminForm.ai.head') }}
+                    </span>
+                    <div class="ai-result__actions">
+                      <button type="button" class="btn btn--ghost btn--sm" (click)="dismissAi()">{{ i18n.t('adminForm.ai.dismiss') }}</button>
+                      <button type="button" class="btn btn--secondary btn--sm" (click)="acceptAi()">{{ i18n.t('adminForm.ai.use') }}</button>
+                    </div>
+                  </div>
+                  <p>{{ aiPreview() }}</p>
+                </div>
+              }
             </div>
 
             <div class="field" style="margin-top: 18px;">
@@ -189,11 +222,43 @@ import { ImagePickerComponent } from '../../shared/image-picker.component';
       font-size: 0.8125rem; font-weight: 700;
       flex-shrink: 0;
     }
+
+    /* ─── AI sparkle button (mirrors admin-action-form) ─── */
+    .textarea-wrap { position: relative; }
+    .ai-btn {
+      position: absolute;
+      right: 10px; bottom: 10px;
+      background: var(--surface);
+      border: 1px solid var(--line-2);
+    }
+    .ai-btn:hover:not(:disabled) { border-color: var(--ink); background: var(--bg); }
+
+    .ai-result {
+      margin-top: 12px;
+      padding: 14px 16px;
+      background: rgba(244, 228, 67, 0.12);
+      border: 1px solid rgba(244, 228, 67, 0.5);
+      border-radius: 12px;
+    }
+    .ai-result__head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+      font-size: 0.8125rem; color: var(--ink);
+      margin-bottom: 10px; font-weight: 600;
+    }
+    .ai-result__head > span {
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .ai-result__actions { display: flex; gap: 6px; }
+    .ai-result p {
+      margin: 0; font-size: 0.9375rem; color: var(--ink); line-height: 1.55;
+    }
   `]
 })
 export class ProposeComponent implements OnInit, OnDestroy {
   readonly i18n = inject(I18nService);
   private api = inject(ProposalsService);
+  private aiApi = inject(AiService);
   private router = inject(Router);
   private events = inject(EventsService);
 
@@ -206,6 +271,40 @@ export class ProposeComponent implements OnInit, OnDestroy {
   readonly success = signal(false);
   readonly error = signal<string | null>(null);
   readonly mine = signal<Proposal[]>([]);
+
+  // AI assist: identical UX to the admin action form — sparkle button generates
+  // a draft description from the title, user accepts (overwrites textarea) or
+  // dismisses. The same /ai/actions/describe endpoint backs both surfaces.
+  readonly aiBusy = signal(false);
+  readonly aiPreview = signal<string | null>(null);
+  readonly aiError = signal<string | null>(null);
+
+  generate(): void {
+    if (!this.title.trim()) return;
+    this.aiBusy.set(true);
+    this.aiError.set(null);
+    this.aiPreview.set(null);
+    this.aiApi.describeAction(this.title.trim()).subscribe({
+      next: (res) => { this.aiPreview.set(res.description); this.aiBusy.set(false); },
+      error: (err) => {
+        this.aiBusy.set(false);
+        this.aiError.set(
+          err.status === 500
+            ? this.i18n.t('adminForm.ai.err.nokey')
+            : this.i18n.t('adminForm.ai.err.generic'));
+      }
+    });
+  }
+
+  acceptAi(): void {
+    const text = this.aiPreview();
+    if (text) this.description = text;
+    this.aiPreview.set(null);
+  }
+
+  dismissAi(): void {
+    this.aiPreview.set(null);
+  }
 
   ngOnInit(): void {
     this.refreshMine();

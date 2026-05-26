@@ -1,0 +1,14 @@
+-- Wipe the old French demo actions so BootstrapService can repopulate
+-- the DB with the Tunisia-themed seed list on next boot.
+--
+-- DELETE FROM actions cascades through registrations, posts, comments,
+-- reactions and action_chat_messages (all FKs declared ON DELETE CASCADE
+-- back in V4 / V7 / V8). Proposals are independent of actions so they
+-- stay put.
+--
+-- BootstrapService's idempotency check is "skip if any action has
+-- latitude/longitude". After this DELETE the table is empty, so on the
+-- next startup the bootstrap reseeds with the new Tunisia list. On
+-- subsequent boots Flyway has already run V9 once, so the table keeps
+-- whatever's in it.
+DELETE FROM actions;

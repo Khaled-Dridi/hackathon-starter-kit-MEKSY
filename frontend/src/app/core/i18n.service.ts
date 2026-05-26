@@ -125,6 +125,10 @@ const FR: Record<string, string> = {
   'login.illus.subtitle': "Charity Day vous connecte à des ONG partenaires partout en France. Vous choisissez la cause, la date, le format — inscription en deux clics.",
   'login.illus.foot.brand': 'inetum · Charity Day',
   'login.illus.foot.internal': 'Usage interne uniquement',
+  'login.echo.line1': 'UN JOUR',
+  'login.echo.line2': 'UNE ACTION',
+  'login.echo.line3': 'ENSEMBLE',
+  'login.echo.tagline': 'Charity Day · 2026',
 
   // ─── actions list ───
   'actions.title': 'Trouvez votre action',
@@ -147,6 +151,7 @@ const FR: Record<string, string> = {
   'actions.card.seatsLeft': '{n} places restantes',
   'actions.card.open': 'Ouverte',
   'actions.card.registered': 'Inscrit',
+  'actions.card.past': 'Passée',
   'actions.card.seats': '{filled} sur {capacity} places prises',
   'actions.card.left': '— {n} restantes',
   'actions.banner.eyebrow': 'Vous ne trouvez pas votre bonheur ?',
@@ -177,6 +182,7 @@ const FR: Record<string, string> = {
   'detail.err.already': 'Vous êtes déjà inscrit à cette action.',
   'detail.err.alreadyYear': "Vous avez déjà rejoint une action cette année — c'est votre créneau. Libérez-le en annulant cette inscription.",
   'detail.err.notReg': 'Vous n\'êtes pas inscrit à cette action.',
+  'detail.err.alreadyStarted': "C'est trop tard — cette action a déjà commencé. Les inscriptions sont closes.",
   'detail.err.generic': 'Une erreur est survenue.',
   'detail.registrants.title': 'Inscrits',
   'detail.registrants.none': 'Aucun inscrit pour le moment.',
@@ -465,6 +471,10 @@ const EN: Record<string, string> = {
   'login.illus.subtitle': "Charity Day connects you to vetted partner NGOs across France. You pick the cause, the date, the format — sign up in two clicks.",
   'login.illus.foot.brand': 'inetum · Charity Day',
   'login.illus.foot.internal': 'Internal use only',
+  'login.echo.line1': 'ONE DAY',
+  'login.echo.line2': 'ONE ACTION',
+  'login.echo.line3': 'TOGETHER',
+  'login.echo.tagline': 'Charity Day · 2026',
 
   // ─── actions list ───
   'actions.title': 'Find your action',
@@ -487,6 +497,7 @@ const EN: Record<string, string> = {
   'actions.card.seatsLeft': '{n} seats left',
   'actions.card.open': 'Open',
   'actions.card.registered': 'Registered',
+  'actions.card.past': 'Past',
   'actions.card.seats': '{filled} of {capacity} seats filled',
   'actions.card.left': '— {n} left',
   'actions.banner.eyebrow': "Don't see what you're looking for?",
@@ -517,6 +528,7 @@ const EN: Record<string, string> = {
   'detail.err.already': 'You are already registered for this action.',
   'detail.err.alreadyYear': "You've already joined one action this year — that's your slot used up. Free it by cancelling that one.",
   'detail.err.notReg': 'You are not registered for this action.',
+  'detail.err.alreadyStarted': "Too late — this action has already started. Registrations are closed.",
   'detail.err.generic': 'Something went wrong.',
   'detail.registrants.title': 'Registrants',
   'detail.registrants.none': 'No registrants yet.',

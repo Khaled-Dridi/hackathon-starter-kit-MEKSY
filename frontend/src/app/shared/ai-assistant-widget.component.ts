@@ -65,6 +65,8 @@ interface ChatTurn {
                             <span class="ai-chip__title">{{ a.title }}</span>
                             @if (a.isClosed) {
                               <span class="pill pill--closed"><span class="dot"></span>{{ i18n.t('ai.chip.closed') }}</span>
+                            } @else if (isPast(a)) {
+                              <span class="pill pill--closed"><span class="dot"></span>{{ i18n.t('actions.card.past') }}</span>
                             } @else if (a.seatsRemaining === 0) {
                               <span class="pill pill--full"><span class="dot"></span>{{ i18n.t('ai.chip.full') }}</span>
                             } @else if (a.currentUserRegistered) {
@@ -95,7 +97,7 @@ interface ChatTurn {
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                               {{ i18n.t('ai.chip.open') }}
                             </button>
-                            @if (!a.isClosed) {
+                            @if (!a.isClosed && !isPast(a)) {
                               @if (a.currentUserRegistered) {
                                 <button type="button" class="btn btn--danger-ghost btn--sm"
                                         [disabled]="actionBusy() === a.id"
@@ -368,11 +370,17 @@ export class AiAssistantWidgetComponent implements AfterViewChecked {
     const map: Record<string, string> = {
       action_full: this.i18n.t('detail.err.full'),
       action_closed: this.i18n.t('detail.err.closed'),
+      action_already_started: this.i18n.t('detail.err.alreadyStarted'),
       already_registered: this.i18n.t('detail.err.already'),
       already_registered_this_year: this.i18n.t('ai.err.alreadyYear'),
       not_registered: this.i18n.t('detail.err.notReg'),
     };
     return code ? map[code] ?? err?.error?.message ?? null : null;
+  }
+
+  /** True once the action's start time has passed. */
+  isPast(a: RelatedAction): boolean {
+    return !!a.actionDate && new Date(a.actionDate).getTime() < Date.now();
   }
 
   reset(): void {
