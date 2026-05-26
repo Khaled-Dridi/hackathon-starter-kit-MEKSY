@@ -18,19 +18,6 @@ import { EventsService, DomainEvent } from '../core/events.service';
 import { FeedPost, FeedService, ReactionType } from '../core/feed.service';
 import { MediaPickerComponent, MediaSelection } from './media-picker.component';
 
-/**
- * Discussion wall embedded under each action.
- *
- * <h3>Order of things on screen</h3>
- * 1. Composer (write text, optionally pick media, post)
- * 2. Stream of posts, newest first. Each post: author chip + body +
- *    embedded media + reaction bar + comments thread + delete (own).
- *
- * <h3>Real-time</h3>
- * Subscribes to `post.*`, `comment.*`, `reaction.changed` events scoped
- * to the current actionId and debounces a refresh (200 ms) — same pattern
- * as actions-list and the rest of the app.
- */
 @Component({
   selector: 'app-action-feed',
   standalone: true,
@@ -38,38 +25,39 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
   template: `
     <section class="feed">
       <header class="feed__head">
-        <h2>Discussion</h2>
-        <span class="meta">{{ posts().length }} {{ posts().length === 1 ? 'post' : 'posts' }}</span>
+        <h2 class="section-title">Discussion</h2>
+        <span class="muted" style="font-size: 0.875rem;">{{ posts().length }} {{ posts().length === 1 ? 'post' : 'posts' }}</span>
       </header>
 
       <!-- Composer -->
-      <div class="composer">
-        <div class="composer__row">
-          <span class="avatar" [style.background]="navy">{{ initials(myEmail()) }}</span>
-          <textarea class="composer__input"
+      <div class="feed-composer">
+        <div class="feed-composer__row">
+          <span class="avatar avatar--md" [class]="avatarColor(myEmail())">{{ initials(myEmail()) }}</span>
+          <textarea class="feed-composer__input"
                     [(ngModel)]="draftBody" rows="2"
                     placeholder="Share something with the people coming to this action…"></textarea>
         </div>
 
         @if (mediaOpen()) {
-          <div class="composer__media">
+          <div class="feed-composer__media">
             <app-media-picker [value]="draftMedia" (valueChange)="draftMedia = $event" />
           </div>
         }
 
-        <div class="composer__actions">
-          <button type="button" class="link-btn" (click)="mediaOpen.set(!mediaOpen())">
-            <i class="pi pi-image"></i>
+        <div class="feed-composer__actions">
+          <button type="button" class="feed-link-btn" (click)="mediaOpen.set(!mediaOpen())">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             {{ mediaOpen() ? 'Hide media' : 'Add image / video' }}
           </button>
-          <div class="composer__right">
+          <div class="feed-composer__right">
             @if (submitError()) {
               <span class="err-inline">{{ submitError() }}</span>
             }
             <button class="btn btn--primary btn--sm" type="button"
                     [disabled]="!canPost() || submitting()"
+                    [class.btn--loading]="submitting()"
                     (click)="submit()">
-              @if (submitting()) { Posting… } @else { Post }
+              Post
             </button>
           </div>
         </div>
@@ -79,33 +67,32 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
       @if (loading()) {
         <p class="muted" style="padding: 24px 0;">Loading discussion…</p>
       } @else if (posts().length === 0) {
-        <p class="empty">
-          No posts yet. Be the first to start the conversation.
+        <p class="feed-empty">
+          No posts yet — be the first to start the conversation.
         </p>
       } @else {
-        <ul class="post-list">
+        <ul class="feed-post-list">
           @for (p of posts(); track p.id) {
-            <li class="post">
-              <div class="post__head">
-                <span class="avatar" [style.background]="navy">{{ initials(p.authorEmail) }}</span>
-                <div class="post__author">
-                  <span class="post__name">{{ p.authorEmail }}</span>
-                  <span class="post__time">{{ p.createdAt | date:'MMM d, HH:mm' }}</span>
+            <li class="feed-post">
+              <div class="feed-post__head">
+                <span class="avatar avatar--md" [class]="avatarColor(p.authorEmail)">{{ initials(p.authorEmail) }}</span>
+                <div class="feed-post__author">
+                  <span class="feed-post__name">{{ p.authorEmail }}</span>
+                  <span class="feed-post__time">{{ p.createdAt | date:'MMM d, HH:mm' }}</span>
                 </div>
                 @if (p.authorId === myUserId() || isAdmin()) {
-                  <button type="button" class="post__del" (click)="deletePost(p)"
-                          title="Delete post">
-                    <i class="pi pi-trash"></i>
+                  <button type="button" class="feed-post__del" (click)="deletePost(p)" title="Delete post" aria-label="Delete post">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
                   </button>
                 }
               </div>
 
               @if (p.body) {
-                <p class="post__body">{{ p.body }}</p>
+                <p class="feed-post__body">{{ p.body }}</p>
               }
 
               @if (p.mediaUrl) {
-                <div class="post__media">
+                <div class="feed-post__media">
                   @if (p.mediaType === 'video' && isYoutube(p.mediaUrl)) {
                     <iframe [src]="youtubeEmbed(p.mediaUrl)" frameborder="0"
                             allow="encrypted-media; picture-in-picture"
@@ -119,50 +106,50 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
               }
 
               <!-- Reaction bar -->
-              <div class="reactions">
+              <div class="feed-reactions">
                 @for (r of REACTIONS; track r.type) {
-                  <button type="button" class="react-btn"
+                  <button type="button" class="feed-react-btn"
                           [class.is-mine]="p.myReaction === r.dbKey"
                           (click)="toggleReaction(p, r.type, r.dbKey)"
                           [title]="r.label">
-                    <span class="react-emoji">{{ r.emoji }}</span>
+                    <span class="feed-react-emoji">{{ r.emoji }}</span>
                     @if (p.reactionCounts[r.dbKey]) {
-                      <span class="react-count">{{ p.reactionCounts[r.dbKey] }}</span>
+                      <span class="feed-react-count">{{ p.reactionCounts[r.dbKey] }}</span>
                     }
                   </button>
                 }
               </div>
 
               <!-- Comments -->
-              <div class="comments">
+              <div class="feed-comments">
                 @if (p.comments.length > 0) {
                   @for (c of p.comments; track c.id) {
-                    <div class="comment">
-                      <span class="avatar avatar--sm" [style.background]="navy">{{ initials(c.authorEmail) }}</span>
-                      <div class="comment__body">
-                        <div class="comment__head">
-                          <span class="comment__name">{{ c.authorEmail }}</span>
-                          <span class="comment__time">{{ c.createdAt | date:'MMM d, HH:mm' }}</span>
+                    <div class="feed-comment">
+                      <span class="avatar avatar--sm" [class]="avatarColor(c.authorEmail)">{{ initials(c.authorEmail) }}</span>
+                      <div class="feed-comment__body">
+                        <div class="feed-comment__head">
+                          <span class="feed-comment__name">{{ c.authorEmail }}</span>
+                          <span class="feed-comment__time">{{ c.createdAt | date:'MMM d, HH:mm' }}</span>
                           @if (c.authorId === myUserId() || isAdmin()) {
-                            <button type="button" class="comment__del" (click)="deleteComment(p, c.id)"
-                                    title="Delete comment">
-                              <i class="pi pi-times"></i>
+                            <button type="button" class="feed-comment__del" (click)="deleteComment(p, c.id)" title="Delete comment" aria-label="Delete comment">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
                           }
                         </div>
-                        <p class="comment__text">{{ c.body }}</p>
+                        <p class="feed-comment__text">{{ c.body }}</p>
                       </div>
                     </div>
                   }
                 }
-                <div class="comment-composer">
-                  <span class="avatar avatar--sm" [style.background]="navy">{{ initials(myEmail()) }}</span>
-                  <input type="text" class="comment-input"
+                <div class="feed-comment-composer">
+                  <span class="avatar avatar--sm" [class]="avatarColor(myEmail())">{{ initials(myEmail()) }}</span>
+                  <input type="text" class="feed-comment-input"
                          [(ngModel)]="commentDrafts[p.id]"
                          placeholder="Write a comment…"
                          (keydown.enter)="sendComment(p)" />
                   <button class="btn btn--secondary btn--sm" type="button"
                           [disabled]="!commentDrafts[p.id]?.trim() || commentBusy() === p.id"
+                          [class.btn--loading]="commentBusy() === p.id"
                           (click)="sendComment(p)">
                     Send
                   </button>
@@ -176,119 +163,120 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
   `,
   styles: [`
     :host { display: block; }
-    .feed { display: flex; flex-direction: column; gap: 16px; }
+    .feed { display: flex; flex-direction: column; gap: 16px; margin-top: 32px; }
     .feed__head {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      border-top: 1px solid var(--border);
+      border-top: 1px solid var(--line);
       padding-top: 24px;
-    }
-    .feed__head h2 {
-      font-size: 20px;
-      letter-spacing: -0.01em;
-      font-weight: 600;
-      color: var(--navy);
       margin: 0;
     }
-    .meta { color: var(--text-muted); font-size: 13px; }
+    .feed__head h2 { margin: 0; }
 
-    /* Composer */
-    .composer {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 14px 16px;
+    /* ─── Composer ─── */
+    .feed-composer {
+      display: block;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-card);
+      padding: 16px 18px;
+      box-shadow: var(--sh-card);
     }
-    .composer__row { display: flex; gap: 12px; align-items: flex-start; }
-    .composer__input {
+    .feed-composer__row { display: flex; gap: 12px; align-items: flex-start; }
+    .feed-composer__input {
       flex: 1;
       border: 0;
       background: transparent;
       resize: vertical;
-      font: 14px/1.55 'Inter', system-ui, sans-serif;
-      color: var(--text);
-      min-height: 40px;
+      font: 0.9375rem/1.55 var(--font-sans);
+      color: var(--ink);
+      min-height: 44px;
+      padding: 8px 0;
     }
-    .composer__input:focus { outline: 0; }
-    .composer__media { margin-top: 12px; }
-    .composer__actions {
+    .feed-composer__input:focus { outline: 0; }
+    .feed-composer__input::placeholder { color: var(--muted-2); }
+    .feed-composer__media { margin-top: 12px; }
+    .feed-composer__actions {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 10px;
+      margin-top: 12px;
       flex-wrap: wrap;
       gap: 8px;
     }
-    .composer__right { display: flex; align-items: center; gap: 10px; }
-    .err-inline { color: #8B1F1F; font-size: 12px; }
+    .feed-composer__right { display: flex; align-items: center; gap: 10px; }
+    .err-inline { color: var(--danger); font-size: 0.8125rem; }
 
-    .link-btn {
-      appearance: none;
+    .feed-link-btn {
       background: transparent;
       border: 0;
-      color: var(--navy);
-      font-size: 13px;
-      font-weight: 500;
+      color: var(--ink);
+      font-size: 0.875rem;
+      font-weight: 600;
       cursor: pointer;
-      padding: 0;
+      padding: 6px 10px;
+      border-radius: 8px;
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      transition: background var(--t-hover) var(--ease);
     }
-    .link-btn:hover { text-decoration: underline; }
-    .link-btn i { font-size: 12px; }
+    .feed-link-btn:hover { background: var(--bg); }
 
-    /* Avatar */
-    .avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      color: white;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12.5px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      flex-shrink: 0;
+    /* ─── Posts ─── */
+    .feed-post-list {
+      list-style: none; padding: 0; margin: 0;
+      display: flex; flex-direction: column; gap: 14px;
     }
-    .avatar--sm { width: 26px; height: 26px; font-size: 10.5px; }
-
-    /* Posts */
-    .post-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; }
-    .post {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 14px 16px;
+    .feed-post {
+      display: block;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-card);
+      padding: 18px 20px;
+      box-shadow: var(--sh-card);
     }
-    .post__head {
+    .feed-post__head {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 12px;
+      margin-bottom: 12px;
     }
-    .post__author { display: flex; flex-direction: column; line-height: 1.2; flex: 1; min-width: 0; }
-    .post__name { color: var(--text); font-weight: 500; font-size: 13.5px; }
-    .post__time { color: var(--text-muted); font-size: 12px; }
-    .post__del {
-      appearance: none; background: transparent; border: 0;
-      color: var(--text-subtle); cursor: pointer;
-      width: 28px; height: 28px; border-radius: 50%;
+    .feed-post__author {
+      display: flex; flex-direction: column; line-height: 1.25;
+      flex: 1; min-width: 0;
     }
-    .post__del:hover { background: var(--surface); color: #8B1F1F; }
-    .post__del i { font-size: 12px; }
+    .feed-post__name { color: var(--ink); font-weight: 600; font-size: 0.9375rem; }
+    .feed-post__time { color: var(--muted); font-size: 0.8125rem; }
+    .feed-post__del {
+      background: transparent; border: 0;
+      color: var(--muted-2); cursor: pointer;
+      width: 32px; height: 32px; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background var(--t-hover) var(--ease), color var(--t-hover) var(--ease);
+    }
+    .feed-post__del:hover { background: var(--danger-bg); color: var(--danger); }
 
-    .post__body { margin: 0 0 12px; font-size: 14.5px; line-height: 1.55; color: var(--text); white-space: pre-wrap; }
-    .post__media {
-      border-radius: var(--radius);
+    .feed-post__body {
+      margin: 0 0 14px;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--ink);
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .feed-post__media {
+      border-radius: 12px;
       overflow: hidden;
       background: var(--surface-2);
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       max-height: 480px;
+      border: 1px solid var(--line);
     }
-    .post__media img, .post__media video, .post__media iframe {
+    .feed-post__media img,
+    .feed-post__media video,
+    .feed-post__media iframe {
       width: 100%;
       max-height: 480px;
       display: block;
@@ -296,95 +284,113 @@ import { MediaPickerComponent, MediaSelection } from './media-picker.component';
       background: #000;
       border: 0;
     }
-    .post__media iframe { aspect-ratio: 16 / 9; height: auto; }
+    .feed-post__media iframe { aspect-ratio: 16 / 9; height: auto; }
 
-    /* Reactions */
-    .reactions {
+    /* ─── Reactions ─── */
+    .feed-reactions {
       display: flex;
-      gap: 4px;
+      gap: 6px;
       flex-wrap: wrap;
-      padding-top: 8px;
-      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
     }
-    .react-btn {
-      appearance: none;
-      background: transparent;
-      border: 1px solid transparent;
+    .feed-react-btn {
+      background: var(--bg);
+      border: 1px solid var(--line);
       border-radius: 999px;
-      padding: 4px 10px;
+      padding: 5px 12px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      font-size: 13px;
-      color: var(--text-muted);
-      transition: background 0.12s, border-color 0.12s;
+      gap: 6px;
+      font-size: 0.8125rem;
+      color: var(--ink);
+      transition: all var(--t-hover) var(--ease);
     }
-    .react-btn:hover { background: var(--surface); }
-    .react-btn.is-mine {
-      background: var(--yellow-soft);
-      border-color: rgba(244, 228, 67, 0.6);
-      color: var(--navy);
-      font-weight: 500;
-    }
-    .react-emoji { font-size: 15px; line-height: 1; }
-    .react-count { font-variant-numeric: tabular-nums; font-size: 12.5px; }
-
-    /* Comments */
-    .comments { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-    .comment { display: flex; gap: 10px; align-items: flex-start; }
-    .comment__body {
-      flex: 1;
+    .feed-react-btn:hover { background: var(--surface); border-color: var(--line-2); }
+    .feed-react-btn.is-mine {
       background: var(--surface);
+      border-color: var(--accent);
+      color: var(--ink);
+      box-shadow: 0 0 0 2px rgba(244,228,67,.35);
+    }
+    .feed-react-emoji { font-size: 1rem; line-height: 1; }
+    .feed-react-count { font-variant-numeric: tabular-nums; font-size: 0.8125rem; font-weight: 500; }
+
+    /* ─── Comments ─── */
+    .feed-comments {
+      display: flex; flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+      padding-left: 0;
+    }
+    .feed-comment {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .feed-comment__body {
+      flex: 1;
+      background: var(--bg);
       padding: 8px 12px 10px;
       border-radius: 14px;
       min-width: 0;
     }
-    .comment__head {
+    .feed-comment__head {
       display: flex;
       align-items: baseline;
       gap: 8px;
       margin-bottom: 2px;
     }
-    .comment__name { color: var(--navy); font-weight: 500; font-size: 12.5px; }
-    .comment__time { color: var(--text-muted); font-size: 11.5px; }
-    .comment__del {
+    .feed-comment__name { color: var(--ink); font-weight: 600; font-size: 0.8125rem; }
+    .feed-comment__time { color: var(--muted); font-size: 0.75rem; }
+    .feed-comment__del {
       margin-left: auto;
-      appearance: none; background: transparent; border: 0;
-      color: var(--text-subtle); cursor: pointer;
-      width: 20px; height: 20px; border-radius: 50%;
+      background: transparent; border: 0;
+      color: var(--muted-2); cursor: pointer;
+      width: 22px; height: 22px; border-radius: 6px;
+      display: inline-flex; align-items: center; justify-content: center;
     }
-    .comment__del:hover { color: #8B1F1F; }
-    .comment__del i { font-size: 10px; }
-    .comment__text { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--text); white-space: pre-wrap; }
+    .feed-comment__del:hover { background: var(--danger-bg); color: var(--danger); }
+    .feed-comment__text {
+      margin: 0;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: var(--ink);
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
 
-    .comment-composer {
+    .feed-comment-composer {
       display: flex;
       gap: 10px;
       align-items: center;
       padding-top: 4px;
     }
-    .comment-input {
+    .feed-comment-input {
       flex: 1;
+      min-width: 0;
       height: 36px;
-      padding: 0 12px;
-      border: 1px solid var(--border);
+      padding: 0 14px;
+      border: 1px solid var(--line);
       border-radius: 999px;
-      background: var(--surface);
-      font: 13px 'Inter', system-ui, sans-serif;
-      color: var(--text);
+      background: var(--bg);
+      font: 0.875rem var(--font-sans);
+      color: var(--ink);
     }
-    .comment-input:focus {
+    .feed-comment-input:focus {
       outline: 0;
-      background: var(--white);
-      border-color: var(--navy);
+      background: var(--surface);
+      border-color: var(--ink);
+      box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent);
     }
+    .feed-comment-input::placeholder { color: var(--muted-2); }
 
-    .empty {
+    .feed-empty {
       padding: 36px 0;
       text-align: center;
-      color: var(--text-muted);
-      font-size: 13.5px;
+      color: var(--muted);
+      font-size: 0.9375rem;
     }
   `]
 })
@@ -396,9 +402,6 @@ export class ActionFeedComponent implements OnInit, OnChanges, OnDestroy {
   private events = inject(EventsService);
   private sanitizer = inject(DomSanitizer);
 
-  readonly navy = '#202C50';
-
-  /** Static metadata for the reaction bar, in display order. */
   readonly REACTIONS: { type: ReactionType; dbKey: string; emoji: string; label: string }[] = [
     { type: 'LIKE',  dbKey: 'like',  emoji: '👍', label: 'Like' },
     { type: 'LOVE',  dbKey: 'love',  emoji: '❤️', label: 'Love' },
@@ -417,7 +420,6 @@ export class ActionFeedComponent implements OnInit, OnChanges, OnDestroy {
 
   draftBody = '';
   draftMedia: MediaSelection | null = null;
-  /** One per post id — keyed inputs for comment composers. */
   commentDrafts: Record<number, string> = {};
 
   readonly myUserId = computed(() => {
@@ -427,18 +429,10 @@ export class ActionFeedComponent implements OnInit, OnChanges, OnDestroy {
   readonly myEmail = computed(() => this.auth.email() ?? 'me@local');
   readonly isAdmin = computed(() => this.auth.hasRole('ADMIN'));
 
-  /**
-   * Plain method, NOT a `computed()` — depends on `draftBody` / `draftMedia`
-   * which are non-signal properties bound via ngModel. A computed signal
-   * would only re-run when signals it reads change, so it'd stay at its
-   * initial value (false) forever and the Post button would never enable.
-   * Method form is re-evaluated by Angular every change-detection cycle.
-   */
   canPost(): boolean {
     return this.draftBody.trim().length > 0 || !!this.draftMedia;
   }
 
-  /** SSE refresh handles + debounce. */
   private offEvents: Array<() => void> = [];
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -491,8 +485,6 @@ export class ActionFeedComponent implements OnInit, OnChanges, OnDestroy {
         this.draftBody = '';
         this.draftMedia = null;
         this.mediaOpen.set(false);
-        // Optimistic: SSE will also refresh, but doing one here keeps the
-        // post visible to the author even if SSE is briefly down.
         this.refresh();
       },
       error: (err) => {
@@ -510,7 +502,6 @@ export class ActionFeedComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   toggleReaction(p: FeedPost, type: ReactionType, dbKey: string): void {
-    // Click the same emoji you already chose → clear it. Otherwise set/replace.
     const action$ = p.myReaction === dbKey
       ? this.feed.clearReaction(p.id)
       : this.feed.setReaction(p.id, type);
@@ -536,8 +527,6 @@ export class ActionFeedComponent implements OnInit, OnChanges, OnDestroy {
     this.feed.deleteComment(commentId).subscribe({ next: () => this.refresh() });
   }
 
-  // ---- media renderer helpers ----
-
   isYoutube(url: string): boolean {
     return /(?:youtube\.com\/watch\?v=|youtu\.be\/)/.test(url);
   }
@@ -548,13 +537,18 @@ export class ActionFeedComponent implements OnInit, OnChanges, OnDestroy {
     return this.sanitizer.bypassSecurityTrustResourceUrl(embed);
   }
 
-  // ---- avatar helper ----
-
   initials(email: string | null | undefined): string {
     if (!email) return '??';
     const local = email.split('@')[0];
     const parts = local.split(/[._-]/).filter(Boolean);
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return local.slice(0, 2).toUpperCase();
+  }
+
+  avatarColor(email: string | null | undefined): string {
+    if (!email) return 'avatar--c6';
+    const hash = Array.from(email).reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+    const i = Math.abs(hash) % 6 + 1;
+    return `avatar--c${i}`;
   }
 }
