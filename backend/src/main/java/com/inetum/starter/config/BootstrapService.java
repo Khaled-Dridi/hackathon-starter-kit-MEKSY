@@ -5,7 +5,6 @@ import com.inetum.starter.repository.ActionRepository;
 import com.inetum.starter.repository.UserRepository;
 import com.inetum.starter.service.ActionService;
 import com.inetum.starter.service.UserService;
-import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -19,19 +18,21 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Dev-profile seeder: ensures the two known dev users exist (so the login
- * form's pre-filled credentials work on a fresh DB) and — if the actions
- * table is empty — also seeds a roster of Tunisia-themed charity actions
- * so the new map view and date filters have something realistic to render
- * on day one.
+ * Demo seeder: ensures the two known demo users exist (so the login form's
+ * pre-filled credentials work on a fresh DB) and — if the actions table is
+ * empty — also seeds a roster of Tunisia-themed charity actions so the map
+ * view and date filters have something realistic to render on day one.
  *
- * <p>Idempotent: nothing happens if matching records already exist. Safe
- * to call on every startup. The action-seed step is gated on "no action
- * has coords yet", which is both the fresh-DB case and the case after
- * Flyway V9 wipes the legacy French demo data.
+ * <p>Runs in ALL profiles (dev + prod) because this is a hackathon demo
+ * and the jury hitting the Render deployment needs the same accounts and
+ * sample data as a local dev run. Idempotent: nothing happens if matching
+ * records already exist. Safe to call on every startup.
+ *
+ * <p>The action-seed step is gated on "no action has coords yet", which
+ * covers both the fresh-DB case and the case after Flyway V9 wiped the
+ * legacy French demo data.
  */
 @ApplicationScoped
-@IfBuildProfile("dev")
 @RequiredArgsConstructor
 public class BootstrapService {
 
